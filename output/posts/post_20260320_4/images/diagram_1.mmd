@@ -1,0 +1,31 @@
+flowchart TB
+    subgraph HE["Harness Engineering 4대 핵심 요소"]
+        direction TB
+        A["밀폐된 테스트 환경\nHermetic Testing"]
+        B["기계 판독 가능 문서\nMachine-Readable Docs"]
+        C["모듈형 아키텍처\nModular Architecture"]
+        D["명시적 경계 정의\nExplicit Boundaries"]
+    end
+
+    subgraph ROLE["엔지니어 역할 전환"]
+        direction TB
+        E["코드 작성자\nCode Writer"]
+        F["시스템 설계자\nSystem Architect"]
+    end
+
+    A --> G["AI 에이전트가\n자율적으로 작업 가능"]
+    B --> G
+    C --> G
+    D --> G
+    G --> F
+    E -. "역할 전환" .-> F
+
+    style HE fill:#F3E5F5,stroke:#4A148C,stroke-width:2px,color:#4A148C
+    style ROLE fill:#F3E5F5,stroke:#4A148C,stroke-width:2px,color:#4A148C
+    style A fill:#FFFFFF,stroke:#4A148C,stroke-width:1px,color:#333333
+    style B fill:#FFFFFF,stroke:#4A148C,stroke-width:1px,color:#333333
+    style C fill:#FFFFFF,stroke:#4A148C,stroke-width:1px,color:#333333
+    style D fill:#FFFFFF,stroke:#4A148C,stroke-width:1px,color:#333333
+    style E fill:#FFD600,stroke:#4A148C,stroke-width:1px,color:#333333
+    style F fill:#4A148C,stroke:#FFD600,stroke-width:2px,color:#FFFFFF
+    style G fill:#4A148C,stroke:#F3E5F5,stroke-width:1px,color:#FFFFFF

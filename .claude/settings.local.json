@@ -28,7 +28,8 @@
       "Bash(py .claude/skills/file-manager/scripts/manage_files.py save --path \"output/drafts/post_20260319_1/draft_v1.md\")",
       "Bash(cd:*)",
       "Bash(python .claude/skills/pii-detector/scripts/detect_pii.py --file \"output/drafts/post_20260319_1/draft_v1.md\")",
-      "Bash(python .claude/skills/pii-detector/scripts/detect_pii.py --file \"output/drafts/post_20260320_3/draft_v1.md\")"
+      "Bash(python .claude/skills/pii-detector/scripts/detect_pii.py --file \"output/drafts/post_20260320_3/draft_v1.md\")",
+      "Bash(python .claude/skills/pii-detector/scripts/detect_pii.py --file \"output/drafts/post_20260320_4/draft_v1.md\")"
     ]
   }
 }
