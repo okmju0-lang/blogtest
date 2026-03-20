@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(where python:*)",
+      "Bash(python3 -m pip install youtube-transcript-api)",
+      "Bash(/c/Users/MagicecoleGuest/AppData/Local/Programs/Python/Python*/python.exe)",
+      "Bash(--version)",
+      "Read(//c/Users/MagicecoleGuest/AppData/Local/Programs/**)",
+      "Bash(node --input-type=module -e \":*)",
+      "Bash(npm install:*)",
+      "Bash(node -e \":*)",
+      "Bash(python .claude/skills/web-scraper/scripts/scrape_web.py --url \"https://aifactory.space/page/langchainkr/forum/discussion/4624\" --url_hash \"aifactory_4624\" --output_dir output/sources)",
+      "Bash(where python3:*)",
+      "Bash(py --list)",
+      "Bash(python3 -m pip install requests beautifulsoup4 trafilatura)",
+      "Bash(python3 .claude/skills/web-scraper/scripts/scrape_web.py --url \"https://aifactory.space/page/langchainkr/forum/discussion/4624\" --url_hash \"aifactory_4624\" --output_dir output/sources)",
+      "Bash(pip list:*)",
+      "Bash(pip3 install:*)",
+      "Bash(python -m pip install youtube-transcript-api)",
+      "Bash(where py:*)",
+      "Bash(py -m pip install youtube-transcript-api)",
+      "Bash(py .claude/skills/transcript-extractor/scripts/extract_transcript.py --video_id wP48xJLWuB0 --output_dir output/sources)",
+      "Bash(py -c \"import youtube_transcript_api; print\\(youtube_transcript_api.__version__\\)\")",
+      "Bash(py -c \"from youtube_transcript_api import YouTubeTranscriptApi; help\\(YouTubeTranscriptApi.fetch\\)\")",
+      "Bash(cat:*)",
+      "Bash(py .claude/skills/file-manager/scripts/manage_files.py save --path \"output/story-ideas/idea_20260319_1.md\")",
+      "Bash(py .claude/skills/file-manager/scripts/manage_files.py save --path \"output/drafts/post_20260319_1/draft_v1.md\")",
+      "Bash(cd:*)",
+      "Bash(python .claude/skills/pii-detector/scripts/detect_pii.py --file \"output/drafts/post_20260319_1/draft_v1.md\")",
+      "Bash(python .claude/skills/pii-detector/scripts/detect_pii.py --file \"output/drafts/post_20260320_3/draft_v1.md\")"
+    ]
+  }
+}

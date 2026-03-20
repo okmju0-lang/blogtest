@@ -1,0 +1,37 @@
+graph TB
+    subgraph REPO["코드 저장소 (Repository)"]
+        AGENTS["📄 AGENTS.md<br/>코딩 컨벤션 | 테스트 기준<br/>아키텍처 결정 | 품질 표준"]
+    end
+
+    subgraph AGENT["AI 에이전트 실행 루프"]
+        direction TB
+        START["작업 시작"] --> INJECT["컨텍스트 주입<br/>(AGENTS.md 자동 읽기)"]
+        INJECT --> MW1["미들웨어:<br/>check_message_queue"]
+        MW1 --> MODEL["LLM 모델 호출"]
+        MODEL --> MW2["미들웨어:<br/>open_pr_if_needed"]
+        MW2 --> TOOLS["도구 실행<br/>(15개 핵심 도구)"]
+        TOOLS --> VERIFY["검증<br/>린터 | 포매터 | 테스트"]
+        VERIFY --> |"계속"| MW1
+        VERIFY --> |"완료"| OUTPUT["결과물 산출"]
+    end
+
+    subgraph TRIGGER["호출 채널"]
+        SLACK["💬 Slack"]
+        LINEAR["📋 Linear"]
+        GITHUB["🔀 GitHub"]
+    end
+
+    AGENTS --> INJECT
+    SLACK --> START
+    LINEAR --> START
+    GITHUB --> START
+
+    style REPO fill:#e3f2fd,stroke:#1565c0,color:#000
+    style AGENTS fill:#fff9c4,stroke:#f57f17,color:#000
+    style AGENT fill:#f3e5f5,stroke:#7b1fa2,color:#000
+    style TRIGGER fill:#e8f5e9,stroke:#2e7d32,color:#000
+    style INJECT fill:#bbdefb,stroke:#1565c0,color:#000
+    style MW1 fill:#ffccbc,stroke:#d84315,color:#000
+    style MW2 fill:#ffccbc,stroke:#d84315,color:#000
+    style MODEL fill:#ce93d8,stroke:#7b1fa2,color:#000
+    style OUTPUT fill:#c8e6c9,stroke:#2e7d32,color:#000

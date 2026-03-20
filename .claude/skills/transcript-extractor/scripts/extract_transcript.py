@@ -22,23 +22,16 @@ def extract_transcript(video_id: str, output_dir: str) -> dict:
 
     for attempt in range(3):
         try:
-            # 한국어 우선, 없으면 영어, 없으면 자동 자막
+            # v1.x API: 인스턴스 생성 후 fetch 호출
             try:
-                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-                try:
-                    transcript = transcript_list.find_transcript(["ko", "ko-KR"])
-                except Exception:
-                    try:
-                        transcript = transcript_list.find_transcript(["en", "en-US"])
-                    except Exception:
-                        transcript = transcript_list.find_generated_transcript(["ko", "en"])
-                entries = transcript.fetch()
+                ytt = YouTubeTranscriptApi()
+                entries = ytt.fetch(video_id, languages=["ko", "ko-KR", "en", "en-US"])
             except (NoTranscriptFound, TranscriptsDisabled) as e:
                 # 자막 없음 — 스킵
                 _log_skip(skip_log, f"yt_{video_id}", "NoTranscript", f"https://www.youtube.com/watch?v={video_id}")
                 return {"success": False, "skipped": True, "reason": str(e)}
 
-            text = "\n".join(entry["text"] for entry in entries)
+            text = "\n".join(entry.text for entry in entries)
             if len(text) < 100:
                 _log_skip(skip_log, f"yt_{video_id}", "TooShort", f"https://www.youtube.com/watch?v={video_id}")
                 return {"success": False, "skipped": True, "reason": "transcript too short"}
