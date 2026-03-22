@@ -1,0 +1,15 @@
+# AX 블로그 에이전트 Python 의존성
+
+# YouTube 자막 추출
+youtube-transcript-api>=0.6.0
+
+# 웹 스크래핑
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+trafilatura>=1.6.0
+
+# Tavily 팩트체크 검색
+tavily-python>=0.3.0
+
+# Google Gemini 이미지 생성
+google-genai>=0.3.0
