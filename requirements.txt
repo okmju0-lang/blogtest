@@ -13,3 +13,6 @@ tavily-python>=0.3.0
 
 # Google Gemini 이미지 생성
 google-genai>=0.3.0
+
+# 웹 스크린샷 캡처 (Visual Editor)
+playwright>=1.40.0
