@@ -39,7 +39,7 @@ python .claude/skills/file-manager/scripts/manage_files.py new_post_id
 | 브랜드 반영본 | `output/drafts/{post_id}/draft_branded.md` |
 | SEO 피드백 | `output/drafts/{post_id}/seo_feedback.md` |
 | 텍스트 최종본 | `output/drafts/{post_id}/draft_final.md` |
-| 이미지 명세 | `output/drafts/{post_id}/image_spec.md` |
+| 작업 중 이미지 | `output/drafts/{post_id}/images/*.png` |
 | 최종 발행본 | `output/posts/{post_id}/post.md` |
 
 ## 버전 관리

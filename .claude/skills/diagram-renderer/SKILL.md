@@ -6,7 +6,7 @@ Mermaid 코드의 문법을 검증하고 PNG/SVG로 렌더링한다.
 
 ## 트리거 조건
 
-워크플로우 2 단계 8c: `image_spec.md`의 `diagram` 타입 항목에 대해 Orchestrator가 호출한다.
+워크플로우 2 단계 8d: LLM이 작성한 Mermaid 코드의 문법 검증 및 렌더링 시 Orchestrator가 호출한다.
 
 ## 사전 요구사항
 

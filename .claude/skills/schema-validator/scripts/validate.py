@@ -27,9 +27,6 @@ SCHEMAS = {
     "seo_feedback": {
         "required_sections": ["제목", "메타 디스크립션", "키워드", "헤딩"],
     },
-    "image_spec": {
-        "required_fields": ["image_id", "type", "placement", "prompt", "aspect_ratio", "alt_text"],
-    },
     "draft": {
         "min_chars": 1500,
         "required_sections": ["메타 디스크립션", "카테고리", "소스"],

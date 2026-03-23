@@ -25,7 +25,6 @@ python .claude/skills/schema-validator/scripts/validate.py \
 | `review` | 리뷰 파일 | 기밀 필터링 결과 섹션, critical_count, confidential_count, 팩트체크 섹션 |
 | `brand_feedback` | 브랜드 피드백 | 가이드 항목 참조 포함 |
 | `seo_feedback` | SEO 피드백 | 제목 최적화, 메타 디스크립션, 타겟 키워드, 헤딩 구조 섹션 |
-| `image_spec` | 이미지 명세 | image_id, type, placement, prompt, aspect_ratio, alt_text |
 | `draft` | 초고/수정본 | 제목, 메타 디스크립션, 카테고리 태그, 본문 1,500자+, 소스 크레딧 |
 
 ## 출력 형식
