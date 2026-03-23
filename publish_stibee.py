@@ -334,6 +334,19 @@ def main():
     meta, body = parse_post_md(args.post_path)
     title = meta.get("title", "제목 없음")
 
+    # 썸네일 경로 확인 (frontmatter의 thumbnail 필드)
+    thumbnail_path = meta.get("thumbnail", "")
+    if thumbnail_path:
+        post_dir = os.path.dirname(os.path.abspath(args.post_path))
+        thumbnail_full = os.path.join(post_dir, thumbnail_path)
+        if os.path.exists(thumbnail_full):
+            # 본문 최상단(제목 바로 뒤)에 썸네일 삽입
+            body = body.split("\n", 1)
+            if len(body) == 2:
+                body = body[0] + "\n\n" + f"![{title}]({thumbnail_path})" + "\n" + body[1]
+            else:
+                body = body[0] + "\n\n" + f"![{title}]({thumbnail_path})"
+
     # 마크다운 → HTML 변환
     html_content = md_to_html(body)
 
