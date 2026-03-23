@@ -93,6 +93,75 @@ def md_to_html(md_text):
     # 기울임: *text* → <em>
     html = re.sub(r"\*(.+?)\*", r"<em>\1</em>", html)
 
+    # 인용 블록: > text → <blockquote> 또는 CTA 블록
+    def convert_blockquotes(text):
+        cta_keywords = ("컨설팅", "문의", "상담")
+        cta_actions = ("확인해보세요", "시작해보세요", "만나보세요", "알아보기")
+        lines = text.split("\n")
+        result = []
+        in_quote = False
+        quote_lines = []
+        for line in lines:
+            if line.startswith("> "):
+                if not in_quote:
+                    in_quote = True
+                    quote_lines = []
+                quote_lines.append(line[2:])
+            else:
+                if in_quote:
+                    content = "<br>\n".join(quote_lines)
+                    joined = " ".join(quote_lines)
+                    is_cta = any(k in joined for k in cta_keywords) and any(a in joined for a in cta_actions)
+                    if is_cta:
+                        result.append('<div class="cta-block">' + content + "</div>")
+                    else:
+                        result.append("<blockquote>" + content + "</blockquote>")
+                    in_quote = False
+                    quote_lines = []
+                result.append(line)
+        if in_quote:
+            content = "<br>\n".join(quote_lines)
+            joined = " ".join(quote_lines)
+            is_cta = any(k in joined for k in cta_keywords) and any(a in joined for a in cta_actions)
+            if is_cta:
+                result.append('<div class="cta-block">' + content + "</div>")
+            else:
+                result.append("<blockquote>" + content + "</blockquote>")
+        return "\n".join(result)
+
+    html = convert_blockquotes(html)
+
+    # 마크다운 테이블 → HTML <table>
+    def convert_tables(text):
+        lines = text.split("\n")
+        result = []
+        i = 0
+        while i < len(lines):
+            # 테이블 헤더 감지: | col | col | 다음 줄이 |---|---|
+            if (i + 1 < len(lines)
+                    and "|" in lines[i]
+                    and re.match(r"^\|[\s\-:|]+\|$", lines[i + 1].strip())):
+                table_lines = [lines[i]]
+                i += 2  # 헤더 + 구분선 건너뛰기
+                while i < len(lines) and "|" in lines[i] and lines[i].strip().startswith("|"):
+                    table_lines.append(lines[i])
+                    i += 1
+                # 헤더 파싱
+                header_cells = [c.strip() for c in table_lines[0].strip().strip("|").split("|")]
+                thead = "<tr>" + "".join(f"<th>{c}</th>" for c in header_cells) + "</tr>"
+                # 바디 파싱
+                tbody_rows = []
+                for row_line in table_lines[1:]:
+                    cells = [c.strip() for c in row_line.strip().strip("|").split("|")]
+                    tbody_rows.append("<tr>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>")
+                result.append(f'<div class="table-wrap"><table><thead>{thead}</thead><tbody>{"".join(tbody_rows)}</tbody></table></div>')
+            else:
+                result.append(lines[i])
+                i += 1
+        return "\n".join(result)
+
+    html = convert_tables(html)
+
     # 구분선: --- → <hr>
     html = re.sub(r"^---+$", r"<hr />", html, flags=re.MULTILINE)
 
@@ -110,7 +179,7 @@ def md_to_html(md_text):
         if not p:
             continue
         # 이미 블록 태그로 시작하면 감싸지 않음
-        if re.match(r"<(h[1-6]|li|hr|img|div|table|ul|ol)", p):
+        if re.match(r"<(h[1-6]|li|hr|img|div|table|ul|ol|blockquote)", p):
             wrapped.append(p)
         else:
             wrapped.append(f"<p>{p}</p>")
@@ -121,6 +190,7 @@ def md_to_html(md_text):
 <html>
 <head>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <style>
   body {{ font-family: 'Pretendard', -apple-system, sans-serif; line-height: 1.8; color: #333; max-width: 680px; margin: 0 auto; padding: 20px; }}
   h1 {{ font-size: 28px; margin-top: 32px; }}
@@ -132,6 +202,19 @@ def md_to_html(md_text):
   a {{ color: #2563eb; }}
   hr {{ border: none; border-top: 1px solid #e5e7eb; margin: 32px 0; }}
   strong {{ color: #111; }}
+  blockquote {{ background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%); border-left: 4px solid #2563eb; padding: 24px 28px; margin: 32px 0; border-radius: 0 12px 12px 0; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08); font-size: 16px; line-height: 1.7; }}
+  blockquote strong {{ color: #1e40af; }}
+  .table-wrap {{ border-radius: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin: 24px 0; }}
+  table {{ width: 100%; border-collapse: collapse; font-size: 15px; min-width: 320px; }}
+  th {{ background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: #fff; padding: 14px 20px; text-align: left; font-weight: 600; font-size: 14px; letter-spacing: 0.3px; white-space: nowrap; }}
+  td {{ padding: 13px 20px; border-bottom: 1px solid #e5e7eb; color: #374151; font-size: 14.5px; word-break: keep-all; }}
+  tr:nth-child(even) td {{ background: #f8fafc; }}
+  tr:last-child td {{ border-bottom: none; }}
+  tr:hover td {{ background: #eef2ff; transition: background 0.15s ease; }}
+  .cta-block {{ background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%); color: #fff; padding: 32px 36px; margin: 40px 0 24px; border-radius: 16px; text-align: center; font-size: 17px; line-height: 1.7; box-shadow: 0 4px 16px rgba(37, 99, 235, 0.2); }}
+  .cta-block strong {{ color: #fff; font-size: 19px; }}
+  .cta-block a {{ color: #fff; background: rgba(255,255,255,0.2); padding: 10px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block; margin-top: 12px; transition: background 0.2s ease; }}
+  .cta-block a:hover {{ background: rgba(255,255,255,0.35); }}
 </style>
 </head>
 <body>
@@ -221,6 +304,10 @@ def main():
     )
     parser.add_argument("post_path", help="post.md 파일 경로")
     parser.add_argument(
+        "--preview", action="store_true",
+        help="발송하지 않고 이메일 내용만 미리보기 (HTML 파일 생성)",
+    )
+    parser.add_argument(
         "--reserve", metavar="YYYYMMDDhhmmss",
         help="예약 발송 시각 (KST 기준, 예: 20260324090000)",
     )
@@ -238,7 +325,32 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     load_env(os.path.join(script_dir, ".env"))
 
-    # 필수 환경 변수 확인
+    # 파일 확인
+    if not os.path.exists(args.post_path):
+        print(f"[오류] 파일을 찾을 수 없습니다: {args.post_path}")
+        sys.exit(1)
+
+    # 포스트 파싱
+    meta, body = parse_post_md(args.post_path)
+    title = meta.get("title", "제목 없음")
+
+    # 마크다운 → HTML 변환
+    html_content = md_to_html(body)
+
+    # 프리뷰 모드: API 키 없이 HTML 파일만 생성
+    if args.preview:
+        preview_path = os.path.splitext(args.post_path)[0] + "_preview.html"
+        with open(preview_path, "w", encoding="utf-8") as f:
+            f.write(html_content)
+        print(f"[이메일 미리보기]")
+        print(f"  제목: {title}")
+        print(f"  본문 길이: {len(body)}자 (MD) → {len(html_content)}자 (HTML)")
+        print(f"  프리뷰 파일: {preview_path}")
+        print(f"\n프리뷰 파일을 브라우저에서 열어 확인한 후,")
+        print(f"발송하려면 --preview 없이 다시 실행하세요.")
+        sys.exit(0)
+
+    # 필수 환경 변수 확인 (발송 시에만 필요)
     api_key = os.environ.get("STIBEE_API_KEY")
     list_id = os.environ.get("STIBEE_LIST_ID")
     sender_email = os.environ.get("STIBEE_SENDER_EMAIL")
@@ -264,18 +376,6 @@ def main():
         print("\n.env 파일에 추가하거나 시스템 환경 변수로 설정해 주세요.")
         print("(.env.example 파일을 참고하세요)")
         sys.exit(1)
-
-    # 파일 확인
-    if not os.path.exists(args.post_path):
-        print(f"[오류] 파일을 찾을 수 없습니다: {args.post_path}")
-        sys.exit(1)
-
-    # 포스트 파싱
-    meta, body = parse_post_md(args.post_path)
-    title = meta.get("title", "제목 없음")
-
-    # 마크다운 → HTML 변환
-    html_content = md_to_html(body)
 
     print(f"[스티비 이메일 발송]")
     print(f"  제목: {title}")

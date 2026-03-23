@@ -40,6 +40,10 @@
 ```
 사용자 입력
     │
+    ├── 입력 유형: 주제 키워드 (URL/브리핑 없이 주제만 제공)
+    │       → 워크플로우 1 (Topic Research Pipeline) → 워크플로우 2 (Writing Pipeline)
+    │       예: "MCP에 대해 써줘", "AI 에이전트 트렌드"
+    │
     ├── 카테고리: AI Trend
     │       → 워크플로우 1 (Curation Pipeline) → 워크플로우 2 (Writing Pipeline)
     │
@@ -55,17 +59,30 @@
 
 ## 워크플로우 1: Content-Curation Pipeline
 
-**적용 대상**: AI Trend (필수), Thought Leadership (외부 소스 기반 시 선택)
+**적용 대상**: AI Trend (필수), Thought Leadership (외부 소스 기반 시 선택), **주제 키워드 입력** (URL/브리핑 없이 주제만 제공된 경우)
 
 ### 실행 절차
 
-**단계 0**: 사용자로부터 URL 목록을 수집한다. URL이 1개 이상이고 유효한 형식인지 확인한다.
+**단계 0**: 사용자의 입력 유형을 판별한다.
+- **URL 입력**: URL 목록을 수집한다. URL이 1개 이상이고 유효한 형식인지 확인한다. → 단계 0.5로 진행.
+- **주제 키워드 입력**: URL/브리핑 없이 주제만 제공된 경우 (예: "MCP에 대해 써줘"). → 단계 0.7로 진행.
+- 카테고리가 지정되지 않았으면 사용자에게 확인 요청. 주제 키워드 입력 시 기본 카테고리는 AI Trend.
 
-**단계 0.5 — URL 유형 분류**
+**단계 0.5 — URL 유형 분류** (URL 입력 시)
 - `url-classifier` 스킬을 호출한다.
 - 도메인이 `youtube.com`, `youtu.be`, `m.youtube.com`이면 `youtube`, 그 외는 `web`으로 분류한다.
+- → 단계 1로 진행.
 
-**단계 1 — 콘텐츠 추출**
+**단계 0.7 — 주제 기반 웹 리서치** (주제 키워드 입력 시)
+- `tavily-search` 스킬을 **리서치 모드**(research)로 호출한다.
+- 주제 키워드를 기반으로 검색어를 구성한다. 한국어 + 영어 검색어를 모두 시도하여 소스 다양성을 확보한다.
+- 검색 횟수: 검색어 2~3개, 각 최대 5개 결과 = 총 10~15개 후보.
+- 검색 결과에서 관련성 높은 URL을 선별하여 `web-scraper` 스킬로 본문을 추출한다.
+- 추출 결과: `output/sources/web_{url_hash}.md` 형식으로 저장한다.
+- 검색 결과 메타데이터(제목, URL, 요약)는 `output/sources/topic_research_{YYYYMMDD}_{n}.md`에 별도 기록한다.
+- → 단계 2로 진행. (단계 1을 건너뛴다)
+
+**단계 1 — 콘텐츠 추출** (URL 입력 시)
 - YouTube URL: `transcript-extractor` 스킬 호출 → `output/sources/yt_{video_id}.md` 저장
   - 자막 없음: 스킵 + 로그 기록 (계속 진행)
   - 네트워크 오류: 최대 2회 자동 재시도
@@ -105,7 +122,7 @@
 
 **단계 0**: 사용자로부터 작업 지시를 받는다.
 - 필수: 카테고리 지정 (4개 중 하나). 누락 시 사용자에게 확인 요청.
-- 필수: 글감 카드 ID 또는 내부 브리핑 텍스트 중 하나 이상.
+- 필수: 글감 카드 ID, 내부 브리핑 텍스트, 또는 주제 리서치 결과 중 하나 이상.
 
 **단계 0.5 — 브리핑 저장** (내부 브리핑인 경우만)
 - `file-manager` 스킬로 `output/briefings/brief_{timestamp}.md` 저장.
@@ -220,10 +237,19 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 - 출력: `output/posts/{post_id}/visual_report.md` (비주얼 편집 요약)
 
 **단계 11 — 스티비 이메일 발송** (Orchestrator가 직접 수행)
-- 단계 10 완료 후, 담당자에게 이메일 발송 여부를 확인한다. (**Human-in-the-loop**)
+
+11a. **이메일 미리보기** (**Human-in-the-loop**)
+- 단계 10 완료 후, `publish_stibee.py`를 `--preview` 모드로 실행하여 HTML 프리뷰 파일을 생성한다.
+- 실행 명령: `python publish_stibee.py output/posts/{post_id}/post.md --preview`
+- 출력: `output/posts/{post_id}/post_preview.html`
+- 담당자에게 프리뷰 파일 경로를 안내하고, 이메일 내용을 확인하도록 요청한다.
+- 담당자의 응답을 기다린다: **승인(즉시/예약)** 또는 **수정 요청** 또는 **발송 스킵**.
+- 수정 요청 시: Writer에게 수정 지시 후 프리뷰를 재생성한다.
+
+11b. **이메일 발송** (담당자 승인 후)
 - 담당자가 승인하면 `publish_stibee.py` 스크립트를 실행한다.
-- 실행 명령: `python publish_stibee.py output/posts/{post_id}/post.md`
-- 예약 발송 시: `python publish_stibee.py output/posts/{post_id}/post.md --reserve YYYYMMDDhhmmss`
+- 즉시 발송: `python publish_stibee.py output/posts/{post_id}/post.md`
+- 예약 발송: `python publish_stibee.py output/posts/{post_id}/post.md --reserve YYYYMMDDhhmmss`
 - 스크립트 동작 흐름:
   1. `post.md`의 frontmatter에서 제목 추출
   2. 마크다운 본문을 HTML로 변환
@@ -294,7 +320,7 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 | `transcript-extractor` | YouTube 유형 URL | Orchestrator |
 | `web-scraper` | web 유형 URL | Orchestrator |
 | `file-manager` | 파일 저장이 필요할 때 | Orchestrator, Writer |
-| `tavily-search` | Reviewer가 팩트체크 대상 발견 시 | Reviewer |
+| `tavily-search` | 주제 리서치 (워크플로우 1 단계 0.7) 또는 Reviewer 팩트체크 시 | Orchestrator, Reviewer |
 | `pii-detector` | Reviewer 기밀 필터링 수행 시 | Reviewer |
 | `image-generator` (generate_image.py) | 단계 8: 텍스트 최종본 확정 후 이미지 3장 생성 | Orchestrator |
 | `diagram-renderer` | 단계 8d: Mermaid 다이어그램 렌더링 | Orchestrator |
@@ -306,7 +332,8 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 
 | 단계 | 성공 기준 | 실패 처리 |
 |---|---|---|
-| 소스 추출 (1a, 1b) | 파일 존재 + 최소 100자 | 스킵 + 로그 (자막 없음/접근 불가) / 최대 2회 재시도 (네트워크) |
+| 주제 리서치 (0.7) | 검색 결과 1개 이상 + 웹 소스 추출 1개 이상 | Tavily 실패 시 사용자에게 URL 직접 제공 요청 |
+| 소스 추출 (1) | 파일 존재 + 최소 100자 | 스킵 + 로그 (자막 없음/접근 불가) / 최대 2회 재시도 (네트워크) |
 | 요약 (2) | 3줄 요약 + 인사이트 3개+ + AX 태그 | 1회 재시도 |
 | 글감 제안 (3) | 제목+앵글+카테고리+소스+논점 필드 완비 | 1회 재시도 |
 | 초고 (1/Writer) | 템플릿 구조 + 핵심 논점 + 최소 1,500자 | 1회 재시도 |
@@ -343,6 +370,7 @@ Reviewer가 단계 2에서 기밀 필터링을 수행한다.
 |---|---|
 | YouTube 소스 | `output/sources/yt_{video_id}.md` |
 | 웹 소스 | `output/sources/web_{url_hash}.md` |
+| 주제 리서치 결과 | `output/sources/topic_research_{YYYYMMDD}_{n}.md` |
 | 내부 브리핑 | `output/briefings/brief_{YYYYMMDD_HHMMSS}.md` |
 | 요약 | `output/summaries/{source_id}.md` |
 | 글감 카드 | `output/story-ideas/idea_{YYYYMMDD}_{n}.md` |
@@ -488,9 +516,24 @@ source_refs:
 
 ---
 
-**소스 크레딧**
-{소스 목록}
+> **{카테고리별 리드 CTA 문구}**
+> 매직에꼴 AX 컨설팅을 통해 확인해보세요.
+
+---
+
+**참고 자료**
+- [{출처 제목 1}]({URL 1})
+- [{출처 제목 2}]({URL 2})
+- ...
 ```
+
+> **리드 CTA 규칙**: 모든 블로그 포스트 최하단(참고 자료 아래)에 리드 CTA를 삽입한다.
+> CTA 문구는 카테고리별 템플릿(`references/templates/`)에 정의된 것을 사용한다.
+> 인용 블록(`>`) 형식으로 작성하여 본문과 시각적으로 구분한다.
+
+> **소스 크레딧 규칙**: 웹 서치로 수집한 정보는 반드시 출처 URL을 글 하단 "참고 자료" 섹션에 포함한다.
+> YouTube 소스는 "[영상 제목](YouTube URL)" 형식, 웹 소스는 "[기사/페이지 제목](URL)" 형식으로 표기한다.
+> 내부 브리핑만으로 작성된 글은 "참고 자료" 섹션을 생략할 수 있다.
 
 ---
 
