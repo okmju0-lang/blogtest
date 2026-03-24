@@ -279,42 +279,122 @@ def md_to_html(md_text):
     return html_body
 
 
-# 태그별 인라인 스타일 매핑
-INLINE_STYLES = {
-    "body": "font-family:'Pretendard',-apple-system,sans-serif;line-height:1.8;color:#333;max-width:680px;margin:0 auto;padding:20px;",
-    "h1": "font-size:28px;margin-top:32px;",
-    "h2": "font-size:22px;margin-top:28px;color:#1a1a1a;",
-    "h3": "font-size:18px;margin-top:24px;",
-    "h4": "font-size:16px;margin-top:20px;",
+# ─── 디자인 테마 시스템 ───
+# frontmatter의 theme 필드 또는 --theme CLI 옵션으로 선택 (기본: blue)
+# 사용 가능: blue, forest, noir
+
+_BASE_STYLES = {
     "p": "margin:16px 0;",
     "li": "margin:8px 0;",
     "img": "border-radius:8px;margin:16px 0;max-width:100%;height:auto;",
-    "a": "color:#2563eb;",
-    "hr": "border:none;border-top:1px solid #e5e7eb;margin:32px 0;",
-    "strong": "color:#111;",
-    "code": "background:#f1f5f9;color:#e11d48;padding:2px 6px;border-radius:4px;font-size:14px;font-family:'Consolas','Monaco',monospace;",
-    "pre": "background:#1e293b;color:#e2e8f0;padding:20px 24px;border-radius:8px;overflow-x:auto;font-size:14px;line-height:1.6;margin:24px 0;",
-    "blockquote": "background-color:#f0f4ff;background:linear-gradient(135deg,#f0f4ff 0%,#e8eeff 100%);border-left:4px solid #2563eb;padding:24px 28px;margin:32px 0;border-radius:0 12px 12px 0;box-shadow:0 2px 8px rgba(37,99,235,0.08);font-size:16px;line-height:1.7;",
-    "blockquote_strong": "color:#1e40af;",
-    "table_wrap": "border-radius:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 2px 12px rgba(0,0,0,0.08);margin:24px 0;",
-    "table": "width:100%;border-collapse:collapse;font-size:15px;min-width:320px;",
-    "th": "background-color:#1e293b;background:linear-gradient(135deg,#1e293b 0%,#334155 100%);color:#fff;padding:14px 20px;text-align:left;font-weight:600;font-size:14px;letter-spacing:0.3px;white-space:nowrap;",
-    "td": "padding:13px 20px;border-bottom:1px solid #e5e7eb;color:#374151;font-size:14.5px;word-break:keep-all;",
-    "td_even": "padding:13px 20px;border-bottom:1px solid #e5e7eb;color:#374151;font-size:14.5px;word-break:keep-all;background:#f8fafc;",
-    "td_last": "padding:13px 20px;border-bottom:none;color:#374151;font-size:14.5px;word-break:keep-all;",
-    "cta_block": "background-color:#1e3a5f;background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);color:#fff;padding:40px 36px;margin:48px 0 24px;border-radius:16px;text-align:center;font-size:17px;line-height:1.7;box-shadow:0 4px 16px rgba(37,99,235,0.2);",
-    "cta_strong": "color:#fff;font-size:21px;display:block;margin-bottom:16px;",
-    "cta_a": "color:#1e3a5f;background:#fff;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;display:inline-block;margin-top:8px;",
 }
 
+THEMES = {
+    # ── blue: 비즈니스 블루, 밝은 배경, 신뢰감 ──
+    "blue": {
+        **_BASE_STYLES,
+        "body": "font-family:'Pretendard',-apple-system,sans-serif;line-height:1.8;color:#333;max-width:680px;margin:0 auto;padding:20px;",
+        "h1": "font-size:28px;margin-top:32px;color:#111;",
+        "h2": "font-size:22px;margin-top:28px;color:#1a1a1a;",
+        "h3": "font-size:18px;margin-top:24px;color:#1a1a1a;",
+        "h4": "font-size:16px;margin-top:20px;",
+        "a": "color:#2563eb;",
+        "hr": "border:none;border-top:1px solid #e5e7eb;margin:32px 0;",
+        "strong": "color:#111;",
+        "code": "background:#f1f5f9;color:#e11d48;padding:2px 6px;border-radius:4px;font-size:14px;font-family:'Consolas','Monaco',monospace;",
+        "pre": "background:#1e293b;color:#e2e8f0;padding:20px 24px;border-radius:8px;overflow-x:auto;font-size:14px;line-height:1.6;margin:24px 0;",
+        "blockquote": "background-color:#f0f4ff;background:linear-gradient(135deg,#f0f4ff 0%,#e8eeff 100%);border-left:4px solid #2563eb;padding:24px 28px;margin:32px 0;border-radius:0 12px 12px 0;box-shadow:0 2px 8px rgba(37,99,235,0.08);font-size:16px;line-height:1.7;",
+        "blockquote_strong": "color:#1e40af;",
+        "table_wrap": "border-radius:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 2px 12px rgba(0,0,0,0.08);margin:24px 0;",
+        "table": "width:100%;border-collapse:collapse;font-size:15px;min-width:320px;",
+        "th": "background-color:#1e293b;background:linear-gradient(135deg,#1e293b 0%,#334155 100%);color:#fff;padding:14px 20px;text-align:left;font-weight:600;font-size:14px;letter-spacing:0.3px;white-space:nowrap;",
+        "td": "padding:13px 20px;border-bottom:1px solid #e5e7eb;color:#374151;font-size:14.5px;word-break:keep-all;",
+        "td_even": "padding:13px 20px;border-bottom:1px solid #e5e7eb;color:#374151;font-size:14.5px;word-break:keep-all;background:#f8fafc;",
+        "td_last": "padding:13px 20px;border-bottom:none;color:#374151;font-size:14.5px;word-break:keep-all;",
+        "cta_block": "background-color:#1e3a5f;background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);color:#fff;padding:40px 36px;margin:48px 0 24px;border-radius:16px;text-align:center;font-size:17px;line-height:1.7;box-shadow:0 4px 16px rgba(37,99,235,0.2);",
+        "cta_strong": "color:#fff;font-size:21px;display:block;margin-bottom:16px;",
+        "cta_a": "color:#1e3a5f;background:#fff;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;display:inline-block;margin-top:8px;",
+    },
 
-def apply_inline_styles(html_body):
+    # ── forest: 에메랄드 그린, 따뜻한 배경, 차분한 매거진 톤 ──
+    "forest": {
+        **_BASE_STYLES,
+        "body": "font-family:'Pretendard',-apple-system,sans-serif;line-height:1.85;color:#2d3a2e;max-width:680px;margin:0 auto;padding:20px;background-color:#fafaf7;",
+        "h1": "font-size:28px;margin-top:32px;color:#1a2e1a;",
+        "h2": "font-size:22px;margin-top:28px;color:#1a2e1a;border-bottom:2px solid #86c78c;padding-bottom:8px;",
+        "h3": "font-size:18px;margin-top:24px;color:#2d5a3a;",
+        "h4": "font-size:16px;margin-top:20px;color:#2d5a3a;",
+        "a": "color:#16803c;",
+        "hr": "border:none;border-top:2px dashed #c8dcc8;margin:36px 0;",
+        "strong": "color:#1a2e1a;",
+        "code": "background:#ecf5ec;color:#0f5132;padding:2px 6px;border-radius:4px;font-size:14px;font-family:'Consolas','Monaco',monospace;",
+        "pre": "background:#1a2e1a;color:#d4edda;padding:20px 24px;border-radius:8px;overflow-x:auto;font-size:14px;line-height:1.6;margin:24px 0;",
+        "blockquote": "background-color:#f0f7f0;background:linear-gradient(135deg,#f0f7f0 0%,#e8f4e8 100%);border-left:4px solid #16803c;padding:24px 28px;margin:32px 0;border-radius:0 12px 12px 0;box-shadow:0 2px 8px rgba(22,128,60,0.08);font-size:16px;line-height:1.7;",
+        "blockquote_strong": "color:#0f5132;",
+        "table_wrap": "border-radius:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 2px 12px rgba(0,0,0,0.06);margin:24px 0;",
+        "table": "width:100%;border-collapse:collapse;font-size:15px;min-width:320px;",
+        "th": "background-color:#1a2e1a;background:linear-gradient(135deg,#1a2e1a 0%,#2d5a3a 100%);color:#fff;padding:14px 20px;text-align:left;font-weight:600;font-size:14px;letter-spacing:0.3px;white-space:nowrap;",
+        "td": "padding:13px 20px;border-bottom:1px solid #d4ddd4;color:#374151;font-size:14.5px;word-break:keep-all;",
+        "td_even": "padding:13px 20px;border-bottom:1px solid #d4ddd4;color:#374151;font-size:14.5px;word-break:keep-all;background:#f5f9f5;",
+        "td_last": "padding:13px 20px;border-bottom:none;color:#374151;font-size:14.5px;word-break:keep-all;",
+        "cta_block": "background-color:#16803c;background:linear-gradient(135deg,#16803c 0%,#22c55e 100%);color:#fff;padding:40px 36px;margin:48px 0 24px;border-radius:16px;text-align:center;font-size:17px;line-height:1.7;box-shadow:0 4px 16px rgba(22,128,60,0.2);",
+        "cta_strong": "color:#fff;font-size:21px;display:block;margin-bottom:16px;",
+        "cta_a": "color:#16803c;background:#fff;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;display:inline-block;margin-top:8px;",
+    },
+
+    # ── noir: 다크 배경, 골드/앰버 액센트, 프리미엄 톤 ──
+    "noir": {
+        **_BASE_STYLES,
+        "img": "border-radius:8px;margin:16px 0;max-width:100%;height:auto;border:1px solid #333;",
+        "body": "font-family:'Pretendard',-apple-system,sans-serif;line-height:1.8;color:#d4d4d4;max-width:680px;margin:0 auto;padding:20px;background-color:#111111;",
+        "h1": "font-size:28px;margin-top:32px;color:#f5f5f5;",
+        "h2": "font-size:22px;margin-top:28px;color:#f5f5f5;border-bottom:1px solid #d4a843;padding-bottom:8px;",
+        "h3": "font-size:18px;margin-top:24px;color:#e5c76b;",
+        "h4": "font-size:16px;margin-top:20px;color:#e5c76b;",
+        "a": "color:#e5c76b;",
+        "hr": "border:none;border-top:1px solid #333;margin:32px 0;",
+        "strong": "color:#f5f5f5;",
+        "code": "background:#1e1e1e;color:#e5c76b;padding:2px 6px;border-radius:4px;font-size:14px;font-family:'Consolas','Monaco',monospace;border:1px solid #333;",
+        "pre": "background:#0a0a0a;color:#d4d4d4;padding:20px 24px;border-radius:8px;overflow-x:auto;font-size:14px;line-height:1.6;margin:24px 0;border:1px solid #333;",
+        "blockquote": "background-color:#1a1a1a;background:linear-gradient(135deg,#1a1a1a 0%,#1e1e1e 100%);border-left:4px solid #d4a843;padding:24px 28px;margin:32px 0;border-radius:0 12px 12px 0;box-shadow:0 2px 8px rgba(212,168,67,0.1);font-size:16px;line-height:1.7;",
+        "blockquote_strong": "color:#e5c76b;",
+        "table_wrap": "border-radius:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 2px 12px rgba(0,0,0,0.3);margin:24px 0;",
+        "table": "width:100%;border-collapse:collapse;font-size:15px;min-width:320px;",
+        "th": "background-color:#1a1a1a;background:linear-gradient(135deg,#1a1a1a 0%,#2a2a2a 100%);color:#e5c76b;padding:14px 20px;text-align:left;font-weight:600;font-size:14px;letter-spacing:0.3px;white-space:nowrap;",
+        "td": "padding:13px 20px;border-bottom:1px solid #333;color:#d4d4d4;font-size:14.5px;word-break:keep-all;",
+        "td_even": "padding:13px 20px;border-bottom:1px solid #333;color:#d4d4d4;font-size:14.5px;word-break:keep-all;background:#161616;",
+        "td_last": "padding:13px 20px;border-bottom:none;color:#d4d4d4;font-size:14.5px;word-break:keep-all;",
+        "cta_block": "background-color:#1a1a1a;background:linear-gradient(135deg,#1a1a1a 0%,#2a2a2a 100%);color:#fff;padding:40px 36px;margin:48px 0 24px;border-radius:16px;text-align:center;font-size:17px;line-height:1.7;box-shadow:0 4px 16px rgba(212,168,67,0.15);border:1px solid #d4a843;",
+        "cta_strong": "color:#e5c76b;font-size:21px;display:block;margin-bottom:16px;",
+        "cta_a": "color:#111;background:linear-gradient(135deg,#d4a843 0%,#e5c76b 100%);padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;display:inline-block;margin-top:8px;",
+    },
+}
+
+# 기본값 호환용
+INLINE_STYLES = THEMES["blue"]
+
+AVAILABLE_THEMES = list(THEMES.keys())
+
+
+def get_theme(name="blue"):
+    """테마 이름으로 스타일 딕셔너리를 반환한다."""
+    if name not in THEMES:
+        print(f"[경고] 알 수 없는 테마 '{name}'. 기본 테마 'blue'를 사용합니다.")
+        print(f"  사용 가능: {', '.join(AVAILABLE_THEMES)}")
+        return THEMES["blue"]
+    return THEMES[name]
+
+
+def apply_inline_styles(html_body, theme="blue"):
     """HTML 본문의 태그에 인라인 style 속성을 삽입한다.
 
     이메일 클라이언트는 <style> 블록을 무시하는 경우가 많으므로,
     각 태그에 직접 style 속성을 넣어야 안정적으로 렌더링된다.
+
+    Args:
+        theme: 디자인 테마 이름 (blue, forest, noir)
     """
-    s = INLINE_STYLES
+    s = get_theme(theme)
     result = html_body
 
     # 이미지: 기존 style 속성을 통합 인라인 스타일로 교체
@@ -396,15 +476,16 @@ def apply_inline_styles(html_body):
     return result
 
 
-def wrap_full_html(html_body):
+def wrap_full_html(html_body, theme="blue"):
     """인라인 스타일이 적용된 본문을 전체 HTML 문서로 감싼다. (프리뷰 브라우저용)"""
+    s = get_theme(theme)
     return f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
-<body style="{INLINE_STYLES['body']}">
+<body style="{s['body']}">
 {html_body}
 </body>
 </html>"""
@@ -506,6 +587,10 @@ def main():
         "--segment-ids", nargs="*", type=int,
         help="발송 대상 세그먼트 ID (복수 가능)",
     )
+    parser.add_argument(
+        "--theme", choices=AVAILABLE_THEMES, default=None,
+        help=f"디자인 테마 ({', '.join(AVAILABLE_THEMES)}). 미지정 시 frontmatter의 theme 필드 → 기본 blue",
+    )
     args = parser.parse_args()
 
     # .env 로드
@@ -550,15 +635,22 @@ def main():
             print("  imgbb.com에서 무료 API 키를 발급받아 .env에 추가하세요.")
         html_body = embed_local_images_base64(html_body, post_dir)
 
+    # 테마 결정: CLI --theme > frontmatter theme > 기본 blue
+    theme = args.theme or meta.get("theme", "blue").strip('"').strip("'")
+    if theme not in AVAILABLE_THEMES:
+        print(f"[경고] 알 수 없는 테마 '{theme}'. 기본 테마 'blue'를 사용합니다.")
+        theme = "blue"
+    print(f"  테마: {theme}")
+
     # 인라인 스타일 적용 (이메일 클라이언트 호환)
-    html_body = apply_inline_styles(html_body)
+    html_body = apply_inline_styles(html_body, theme=theme)
 
     # 프리뷰 모드: HTML 파일 2종 생성 후 종료
     if args.preview:
         # 1) 브라우저 확인용 전체 HTML
         preview_path = os.path.splitext(args.post_path)[0] + "_preview.html"
         with open(preview_path, "w", encoding="utf-8") as f:
-            f.write(wrap_full_html(html_body))
+            f.write(wrap_full_html(html_body, theme=theme))
         # 2) 스티비 HTML 에디터 붙여넣기용 (body 내부만)
         stibee_path = os.path.splitext(args.post_path)[0] + "_stibee.html"
         with open(stibee_path, "w", encoding="utf-8") as f:
@@ -572,7 +664,7 @@ def main():
         sys.exit(0)
 
     # API 발송용 전체 HTML 문서
-    html_content = wrap_full_html(html_body)
+    html_content = wrap_full_html(html_body, theme=theme)
 
     # 필수 환경 변수 확인 (발송 시에만 필요)
     api_key = os.environ.get("STIBEE_API_KEY")

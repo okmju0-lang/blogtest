@@ -28,7 +28,7 @@ import re
 import base64
 import requests
 
-from publish_stibee import md_to_html, apply_inline_styles
+from publish_stibee import md_to_html, apply_inline_styles, AVAILABLE_THEMES
 
 # Windows 콘솔 인코딩 문제 방지
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
@@ -218,6 +218,10 @@ def main():
         "--author", default="매직에꼴",
         help="저자명 (기본: 매직에꼴)",
     )
+    parser.add_argument(
+        "--theme", choices=AVAILABLE_THEMES, default=None,
+        help=f"디자인 테마 ({', '.join(AVAILABLE_THEMES)}). 미지정 시 frontmatter의 theme 필드 → 기본 blue",
+    )
     args = parser.parse_args()
 
     # .env 로드
@@ -283,9 +287,15 @@ def main():
     # 읽기 시간
     reading_time = calculate_reading_time(body)
 
+    # 테마 결정: CLI --theme > frontmatter theme > 기본 blue
+    theme = args.theme or meta.get("theme", "blue").strip('"').strip("'")
+    if theme not in AVAILABLE_THEMES:
+        print(f"[경고] 알 수 없는 테마 '{theme}'. 기본 테마 'blue'를 사용합니다.")
+        theme = "blue"
+
     # 마크다운 → HTML 변환 (블로그 프론트엔드가 HTML을 직접 렌더링)
     html_body = md_to_html(body)
-    html_body = apply_inline_styles(html_body)
+    html_body = apply_inline_styles(html_body, theme=theme)
 
     # API 페이로드 구성
     payload = {
@@ -304,6 +314,7 @@ def main():
 
     mode = "발행" if args.publish else "초안 저장"
     print(f"  카테고리: {category}")
+    print(f"  테마: {theme}")
     print(f"  슬러그: {slug}")
     print(f"  모드: {mode}")
     print(f"  읽기 시간: {reading_time}분")
