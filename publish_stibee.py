@@ -23,6 +23,8 @@ import io
 import json
 import argparse
 import re
+import base64
+import mimetypes
 import requests
 
 # Windows 콘솔 인코딩 문제 방지
@@ -67,9 +69,97 @@ def parse_post_md(file_path):
     return meta, body
 
 
+def upload_image_to_imgbb(file_path, api_key):
+    """이미지를 imgbb에 업로드하고 호스팅 URL을 반환한다.
+
+    Args:
+        file_path: 로컬 이미지 파일 경로
+        api_key: imgbb API 키
+
+    Returns:
+        호스팅된 이미지 URL (실패 시 None)
+    """
+    with open(file_path, "rb") as f:
+        encoded = base64.b64encode(f.read()).decode("ascii")
+    try:
+        resp = requests.post(
+            "https://api.imgbb.com/1/upload",
+            data={"key": api_key, "image": encoded},
+            timeout=30,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("success"):
+                return data["data"]["url"]
+    except requests.RequestException as e:
+        print(f"  [경고] imgbb 업로드 실패 ({os.path.basename(file_path)}): {e}")
+    return None
+
+
+def host_local_images(html, post_dir, imgbb_api_key):
+    """HTML 내 로컬 이미지를 imgbb에 업로드하고 호스팅 URL로 치환한다.
+
+    이메일 클라이언트는 로컬 경로와 Base64 data URI 모두 지원하지 않는 경우가 많다.
+    imgbb에 업로드하여 외부 접근 가능한 URL로 변환한다.
+    """
+    upload_cache = {}
+
+    def replace_src(match):
+        prefix = match.group(1)
+        src = match.group(2)
+        suffix = match.group(3)
+        if src.startswith(("http://", "https://", "data:")):
+            return match.group(0)
+        img_path = os.path.normpath(os.path.join(post_dir, src))
+        if not os.path.exists(img_path):
+            return match.group(0)
+        if img_path in upload_cache:
+            hosted_url = upload_cache[img_path]
+        else:
+            print(f"  이미지 업로드 중: {os.path.basename(img_path)}")
+            hosted_url = upload_image_to_imgbb(img_path, imgbb_api_key)
+            upload_cache[img_path] = hosted_url
+        if hosted_url:
+            return f'{prefix}{hosted_url}{suffix}'
+        return match.group(0)
+
+    return re.sub(r'(<img\s[^>]*src=")([^"]+)(")', replace_src, html)
+
+
+def embed_local_images_base64(html, post_dir):
+    """HTML 내 로컬 이미지를 Base64 data URI로 치환한다. (프리뷰 전용 폴백)"""
+    def replace_src(match):
+        prefix = match.group(1)
+        src = match.group(2)
+        suffix = match.group(3)
+        if src.startswith(("http://", "https://", "data:")):
+            return match.group(0)
+        img_path = os.path.join(post_dir, src)
+        if not os.path.exists(img_path):
+            return match.group(0)
+        mime_type = mimetypes.guess_type(img_path)[0] or "image/png"
+        with open(img_path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode("ascii")
+        return f'{prefix}data:{mime_type};base64,{encoded}{suffix}'
+
+    return re.sub(r'(<img\s[^>]*src=")([^"]+)(")', replace_src, html)
+
+
 def md_to_html(md_text):
     """마크다운 텍스트를 기본 HTML로 변환한다."""
     html = md_text
+
+    # 코드 블록: ```lang\ncode\n``` → <pre><code>
+    # (다른 변환보다 먼저 처리하여 내부 마크다운 문법 보호)
+    def convert_code_block(match):
+        code = match.group(2).strip()
+        code = code.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        return f"<pre><code>{code}</code></pre>"
+
+    html = re.sub(r"```(\w*)\n(.*?)```", convert_code_block, html, flags=re.DOTALL)
+
+    # 인라인 코드: `code` → <code>
+    html = re.sub(r"`([^`]+)`", r"<code>\1</code>", html)
 
     # 이미지: ![alt](src) → <img>
     html = re.sub(
@@ -179,45 +269,142 @@ def md_to_html(md_text):
         if not p:
             continue
         # 이미 블록 태그로 시작하면 감싸지 않음
-        if re.match(r"<(h[1-6]|li|hr|img|div|table|ul|ol|blockquote)", p):
+        if re.match(r"<(h[1-6]|li|hr|img|div|table|ul|ol|blockquote|pre)", p):
             wrapped.append(p)
         else:
             wrapped.append(f"<p>{p}</p>")
 
     html_body = "\n".join(wrapped)
 
+    return html_body
+
+
+# 태그별 인라인 스타일 매핑
+INLINE_STYLES = {
+    "body": "font-family:'Pretendard',-apple-system,sans-serif;line-height:1.8;color:#333;max-width:680px;margin:0 auto;padding:20px;",
+    "h1": "font-size:28px;margin-top:32px;",
+    "h2": "font-size:22px;margin-top:28px;color:#1a1a1a;",
+    "h3": "font-size:18px;margin-top:24px;",
+    "h4": "font-size:16px;margin-top:20px;",
+    "p": "margin:16px 0;",
+    "li": "margin:8px 0;",
+    "img": "border-radius:8px;margin:16px 0;max-width:100%;height:auto;",
+    "a": "color:#2563eb;",
+    "hr": "border:none;border-top:1px solid #e5e7eb;margin:32px 0;",
+    "strong": "color:#111;",
+    "code": "background:#f1f5f9;color:#e11d48;padding:2px 6px;border-radius:4px;font-size:14px;font-family:'Consolas','Monaco',monospace;",
+    "pre": "background:#1e293b;color:#e2e8f0;padding:20px 24px;border-radius:8px;overflow-x:auto;font-size:14px;line-height:1.6;margin:24px 0;",
+    "blockquote": "background-color:#f0f4ff;background:linear-gradient(135deg,#f0f4ff 0%,#e8eeff 100%);border-left:4px solid #2563eb;padding:24px 28px;margin:32px 0;border-radius:0 12px 12px 0;box-shadow:0 2px 8px rgba(37,99,235,0.08);font-size:16px;line-height:1.7;",
+    "blockquote_strong": "color:#1e40af;",
+    "table_wrap": "border-radius:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 2px 12px rgba(0,0,0,0.08);margin:24px 0;",
+    "table": "width:100%;border-collapse:collapse;font-size:15px;min-width:320px;",
+    "th": "background-color:#1e293b;background:linear-gradient(135deg,#1e293b 0%,#334155 100%);color:#fff;padding:14px 20px;text-align:left;font-weight:600;font-size:14px;letter-spacing:0.3px;white-space:nowrap;",
+    "td": "padding:13px 20px;border-bottom:1px solid #e5e7eb;color:#374151;font-size:14.5px;word-break:keep-all;",
+    "td_even": "padding:13px 20px;border-bottom:1px solid #e5e7eb;color:#374151;font-size:14.5px;word-break:keep-all;background:#f8fafc;",
+    "td_last": "padding:13px 20px;border-bottom:none;color:#374151;font-size:14.5px;word-break:keep-all;",
+    "cta_block": "background-color:#1e3a5f;background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);color:#fff;padding:40px 36px;margin:48px 0 24px;border-radius:16px;text-align:center;font-size:17px;line-height:1.7;box-shadow:0 4px 16px rgba(37,99,235,0.2);",
+    "cta_strong": "color:#fff;font-size:21px;display:block;margin-bottom:16px;",
+    "cta_a": "color:#1e3a5f;background:#fff;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;display:inline-block;margin-top:8px;",
+}
+
+
+def apply_inline_styles(html_body):
+    """HTML 본문의 태그에 인라인 style 속성을 삽입한다.
+
+    이메일 클라이언트는 <style> 블록을 무시하는 경우가 많으므로,
+    각 태그에 직접 style 속성을 넣어야 안정적으로 렌더링된다.
+    """
+    s = INLINE_STYLES
+    result = html_body
+
+    # 이미지: 기존 style 속성을 통합 인라인 스타일로 교체
+    result = re.sub(
+        r'<img ([^>]*)style="[^"]*"([^>]*)/>',
+        lambda m: f'<img {m.group(1)}style="{s["img"]}"{m.group(2)}/>',
+        result,
+    )
+
+    # CTA 블록: div 전체를 한 번에 처리하여 내부 strong/a 스타일 보장
+    def style_cta_block(match):
+        block = match.group(0)
+        block = block.replace('<div class="cta-block">', f'<div style="{s["cta_block"]}">')
+        block = re.sub(r"<strong>", f'<strong style="{s["cta_strong"]}">', block)
+        block = re.sub(r"<a ", f'<a style="{s["cta_a"]}" ', block)
+        return block
+
+    result = re.sub(
+        r'<div class="cta-block">.*?</div>',
+        style_cta_block,
+        result, flags=re.DOTALL,
+    )
+
+    # blockquote 내부 strong
+    def style_blockquote(match):
+        block = match.group(0)
+        block = re.sub(r"<strong>", f'<strong style="{s["blockquote_strong"]}">', block)
+        return block
+
+    result = re.sub(
+        r"<blockquote>.*?</blockquote>",
+        style_blockquote,
+        result, flags=re.DOTALL,
+    )
+
+    # table-wrap div
+    result = result.replace('<div class="table-wrap">', f'<div style="{s["table_wrap"]}">')
+
+    # 테이블 행: 짝수 행 td에 배경색, 마지막 행 td border 제거
+    def style_table(match):
+        table_html = match.group(0)
+        table_html = table_html.replace("<table>", f'<table style="{s["table"]}">')
+        table_html = re.sub(r"<th>", f'<th style="{s["th"]}">', table_html)
+        # tbody 내 tr 처리
+        rows = re.findall(r"<tr><td.*?</tr>", table_html)
+        for idx, row in enumerate(rows):
+            is_last = (idx == len(rows) - 1)
+            is_even = (idx % 2 == 1)
+            if is_last and is_even:
+                style = s["td_last"].rstrip(";") + ";background:#f8fafc;"
+            elif is_last:
+                style = s["td_last"]
+            elif is_even:
+                style = s["td_even"]
+            else:
+                style = s["td"]
+            styled_row = re.sub(r"<td>", f'<td style="{style}">', row)
+            table_html = table_html.replace(row, styled_row, 1)
+        return table_html
+
+    result = re.sub(r"<table>.*?</table>", style_table, result, flags=re.DOTALL)
+
+    # 단순 태그 (기존 style 없는 것만)
+    for tag in ("h1", "h2", "h3", "h4", "p", "li", "hr", "strong", "blockquote", "a", "pre", "code"):
+        # style 속성이 이미 있는 태그는 건너뜀
+        result = re.sub(
+            rf"<{tag}(?![^>]*style=)([^>]*)>",
+            f'<{tag} style="{s[tag]}"\\1>',
+            result,
+        )
+
+    # <pre> 안의 <code>는 인라인 코드 스타일 제거 (pre의 어두운 배경과 충돌 방지)
+    def strip_code_style_in_pre(m):
+        inner = m.group(1)
+        inner = re.sub(r'<code style="[^"]*"', "<code", inner)
+        return f'<pre style="{s["pre"]}"{inner}'
+    result = re.sub(r'<pre style="[^"]*"(.*?</pre>)', strip_code_style_in_pre, result, flags=re.DOTALL)
+
+    return result
+
+
+def wrap_full_html(html_body):
+    """인라인 스타일이 적용된 본문을 전체 HTML 문서로 감싼다. (프리뷰 브라우저용)"""
     return f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<style>
-  body {{ font-family: 'Pretendard', -apple-system, sans-serif; line-height: 1.8; color: #333; max-width: 680px; margin: 0 auto; padding: 20px; }}
-  h1 {{ font-size: 28px; margin-top: 32px; }}
-  h2 {{ font-size: 22px; margin-top: 28px; color: #1a1a1a; }}
-  h3 {{ font-size: 18px; margin-top: 24px; }}
-  p {{ margin: 16px 0; }}
-  li {{ margin: 8px 0; }}
-  img {{ border-radius: 8px; margin: 16px 0; }}
-  a {{ color: #2563eb; }}
-  hr {{ border: none; border-top: 1px solid #e5e7eb; margin: 32px 0; }}
-  strong {{ color: #111; }}
-  blockquote {{ background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%); border-left: 4px solid #2563eb; padding: 24px 28px; margin: 32px 0; border-radius: 0 12px 12px 0; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08); font-size: 16px; line-height: 1.7; }}
-  blockquote strong {{ color: #1e40af; }}
-  .table-wrap {{ border-radius: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin: 24px 0; }}
-  table {{ width: 100%; border-collapse: collapse; font-size: 15px; min-width: 320px; }}
-  th {{ background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: #fff; padding: 14px 20px; text-align: left; font-weight: 600; font-size: 14px; letter-spacing: 0.3px; white-space: nowrap; }}
-  td {{ padding: 13px 20px; border-bottom: 1px solid #e5e7eb; color: #374151; font-size: 14.5px; word-break: keep-all; }}
-  tr:nth-child(even) td {{ background: #f8fafc; }}
-  tr:last-child td {{ border-bottom: none; }}
-  tr:hover td {{ background: #eef2ff; transition: background 0.15s ease; }}
-  .cta-block {{ background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%); color: #fff; padding: 32px 36px; margin: 40px 0 24px; border-radius: 16px; text-align: center; font-size: 17px; line-height: 1.7; box-shadow: 0 4px 16px rgba(37, 99, 235, 0.2); }}
-  .cta-block strong {{ color: #fff; font-size: 19px; }}
-  .cta-block a {{ color: #fff; background: rgba(255,255,255,0.2); padding: 10px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block; margin-top: 12px; transition: background 0.2s ease; }}
-  .cta-block a:hover {{ background: rgba(255,255,255,0.35); }}
-</style>
 </head>
-<body>
+<body style="{INLINE_STYLES['body']}">
 {html_body}
 </body>
 </html>"""
@@ -332,7 +519,7 @@ def main():
 
     # 포스트 파싱
     meta, body = parse_post_md(args.post_path)
-    title = meta.get("title", "제목 없음")
+    title = meta.get("title", "제목 없음").strip('"').strip("'")
 
     # 썸네일 경로 확인 (frontmatter의 thumbnail 필드)
     thumbnail_path = meta.get("thumbnail", "")
@@ -347,21 +534,45 @@ def main():
             else:
                 body = body[0] + "\n\n" + f"![{title}]({thumbnail_path})"
 
-    # 마크다운 → HTML 변환
-    html_content = md_to_html(body)
+    # 마크다운 → HTML 본문 변환
+    html_body = md_to_html(body)
+    post_dir = os.path.dirname(os.path.abspath(args.post_path))
 
-    # 프리뷰 모드: API 키 없이 HTML 파일만 생성
+    # 이미지 호스팅: imgbb 키가 있으면 업로드, 없으면 Base64 폴백
+    imgbb_key = os.environ.get("IMGBB_API_KEY", "")
+    imgbb_placeholders = {"your_imgbb_api_key_here", ""}
+    if imgbb_key and imgbb_key not in imgbb_placeholders:
+        print("[이미지 호스팅] imgbb에 로컬 이미지 업로드 중...")
+        html_body = host_local_images(html_body, post_dir, imgbb_key)
+    else:
+        if not args.preview:
+            print("[경고] IMGBB_API_KEY가 설정되지 않았습니다. 이미지가 이메일에서 표시되지 않을 수 있습니다.")
+            print("  imgbb.com에서 무료 API 키를 발급받아 .env에 추가하세요.")
+        html_body = embed_local_images_base64(html_body, post_dir)
+
+    # 인라인 스타일 적용 (이메일 클라이언트 호환)
+    html_body = apply_inline_styles(html_body)
+
+    # 프리뷰 모드: HTML 파일 2종 생성 후 종료
     if args.preview:
+        # 1) 브라우저 확인용 전체 HTML
         preview_path = os.path.splitext(args.post_path)[0] + "_preview.html"
         with open(preview_path, "w", encoding="utf-8") as f:
-            f.write(html_content)
+            f.write(wrap_full_html(html_body))
+        # 2) 스티비 HTML 에디터 붙여넣기용 (body 내부만)
+        stibee_path = os.path.splitext(args.post_path)[0] + "_stibee.html"
+        with open(stibee_path, "w", encoding="utf-8") as f:
+            f.write(html_body)
         print(f"[이메일 미리보기]")
         print(f"  제목: {title}")
-        print(f"  본문 길이: {len(body)}자 (MD) → {len(html_content)}자 (HTML)")
-        print(f"  프리뷰 파일: {preview_path}")
-        print(f"\n프리뷰 파일을 브라우저에서 열어 확인한 후,")
-        print(f"발송하려면 --preview 없이 다시 실행하세요.")
+        print(f"  본문 길이: {len(body)}자 (MD) → {len(html_body)}자 (HTML)")
+        print(f"  브라우저 프리뷰: {preview_path}")
+        print(f"  스티비 HTML 에디터용: {stibee_path}")
+        print(f"\n스티비에 수동 입력 시 '{os.path.basename(stibee_path)}' 내용을 HTML 에디터에 붙여넣으세요.")
         sys.exit(0)
+
+    # API 발송용 전체 HTML 문서
+    html_content = wrap_full_html(html_body)
 
     # 필수 환경 변수 확인 (발송 시에만 필요)
     api_key = os.environ.get("STIBEE_API_KEY")

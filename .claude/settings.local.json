@@ -29,7 +29,15 @@
       "Bash(cd:*)",
       "Bash(python .claude/skills/pii-detector/scripts/detect_pii.py --file \"output/drafts/post_20260319_1/draft_v1.md\")",
       "Bash(python .claude/skills/pii-detector/scripts/detect_pii.py --file \"output/drafts/post_20260320_3/draft_v1.md\")",
-      "Bash(python .claude/skills/pii-detector/scripts/detect_pii.py --file \"output/drafts/post_20260320_4/draft_v1.md\")"
+      "Bash(python .claude/skills/pii-detector/scripts/detect_pii.py --file \"output/drafts/post_20260320_4/draft_v1.md\")",
+      "WebSearch",
+      "WebFetch(domain:help.stibee.com)",
+      "WebFetch(domain:api.stibee.com)",
+      "WebFetch(domain:developers.stibee.com)",
+      "WebFetch(domain:stibeev2.apidocumentation.com)",
+      "WebFetch(domain:docs.outcode.biz)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }
