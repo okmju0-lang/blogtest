@@ -1,6 +1,6 @@
 # 이미지 스타일 가이드
 
-> 이 가이드는 Nano Banana 2 이미지 생성 시 카테고리별 시각적 방향성을 정의한다.
+> 이 가이드는 Nano Banana 2 이미지 생성 시 요일별 콘텐츠 유형에 맞는 시각적 방향성을 정의한다.
 > 포스트당 3장 (썸네일 1 + 일러스트 2) 생성에 적용된다.
 
 ---
@@ -14,75 +14,113 @@
 
 ---
 
-## 이미지 유형별 가이드
+## 요일별 이미지 스타일
 
-### 썸네일 (thumbnail)
+### 월요일: 신기술 트렌드 (AI Trend)
 
-- **비율**: 16:9
-- **용도**: 블로그 상단 대표 이미지, 소셜 공유 미리보기
-- **특징**: 글 전체 내용을 종합적으로 표현하는 단일 비주얼
-- **스타일**: 임팩트 있고, 한눈에 글의 주제를 파악할 수 있어야 함
+**분위기**: 미래지향적, 역동적, 혁신적. "새로운 것이 왔다"는 느낌
 
-### 일러스트 (illustration)
+**컬러 키**: 네온 블루 + 퍼플 그라디언트
 
-- **비율**: 4:3
-- **용도**: 핵심 내용을 시각적으로 설명하는 데이터/개념 시각화
-- **특징**: 글의 핵심 포인트 1가지를 깊이 있게 시각화
-- **스타일**: 깔끔한 정보 시각화, 명확한 시각적 계층 구조
+**썸네일 프롬프트 템플릿**:
+```
+Futuristic technology concept illustration, dynamic and innovative,
+[트렌드 관련 기술 요소], neon blue and purple gradient,
+cutting-edge AI visualization, no text, no words, no letters
+```
+
+**일러스트 1 프롬프트 템플릿** (핵심 기술 변화):
+```
+Futuristic illustration depicting [기존 방식 vs 새로운 방식의 대비],
+cutting-edge technology aesthetic, neon blue and purple palette,
+dynamic composition, cinematic lighting, high resolution,
+no text, no words, no letters
+```
+
+**일러스트 2 프롬프트 템플릿** (기업 적용 장면):
+```
+Professional corporate illustration showing [기업 업무 환경에서의 AI 활용 장면],
+modern workplace setting, futuristic blue and purple tones,
+clean and sophisticated, high resolution,
+no text, no words, no letters
+```
+
+**예시 요소**: 신경망, 데이터 흐름, AI 파이프라인, 기술 비교, 워크플로우 자동화
 
 ---
 
-## 카테고리별 스타일 방향
+### 수요일: 문제 + 실행 (Thought Leadership)
 
-### Case Study
+**분위기**: 문제 → 해결의 시각적 전환. 앞부분은 긴장감, 뒷부분은 해소감
 
-**분위기**: 전문적, 깔끔한 테크 느낌, 신뢰감
+**컬러 키**: 딥 블루 + 골드 (문제: 어두운 톤 → 해결: 밝은 골드)
+
+**썸네일 프롬프트 템플릿**:
+```
+Abstract conceptual illustration, visual metaphor of problem-solving transformation,
+[문제와 해결의 대비를 표현하는 비유], deep blue transitioning to warm gold,
+sophisticated and thought-provoking, no text, no words, no letters
+```
+
+**일러스트 1 프롬프트 템플릿** (문제/원인 시각화):
+```
+Conceptual illustration depicting [문제 상황의 시각적 비유],
+abstract artistic style, dark and moody atmosphere,
+deep blue and navy palette, intellectual tone, high resolution,
+no text, no words, no letters
+```
+
+**일러스트 2 프롬프트 템플릿** (해결/실행 시각화):
+```
+Conceptual illustration depicting [해결 방향의 시각적 비유],
+abstract artistic style, hopeful and clear atmosphere,
+warm gold and bright palette, professional tone, high resolution,
+no text, no words, no letters
+```
+
+**예시 요소**: 미로와 출구, 퍼즐 조각, 얽힌 실타래가 풀리는 장면, 어둠에서 빛으로
+
+---
+
+### 금요일: 실행 가이드형 (Case Study)
+
+**분위기**: 전문적, 신뢰감, 데이터 중심. "검증된 결과"의 느낌
+
+**컬러 키**: 블루 + 화이트 (전문성, 신뢰)
 
 **썸네일 프롬프트 템플릿**:
 ```
 Professional corporate technology illustration, clean and modern design,
-[주제 관련 시각 요소], blue and white color scheme, minimalist,
-high-resolution, business context, no text, no words, no letters
+[업종 관련 시각 요소 + AI 적용 장면], blue and white color scheme,
+minimalist, high-resolution, business context,
+no text, no words, no letters
 ```
 
-**일러스트 프롬프트 템플릿**:
+**일러스트 1 프롬프트 템플릿** (문제 → 솔루션 전환):
 ```
-Evocative illustration depicting [핵심 내용과 어울리는 장면/비유],
+Evocative illustration depicting [기존 문제에서 AI 솔루션으로의 전환],
 professional editorial style, clean tech aesthetic,
-blue and white palette, high resolution, detailed,
+blue and white palette, transformation theme, high resolution,
 no text, no words, no letters
 ```
 
-**예시 요소**: 데이터 흐름, 시스템 아키텍처, Before/After 비교, 성과 지표
-
----
-
-### Thought Leadership
-
-**분위기**: 추상적, 개념적, 사고를 유도하는 비주얼
-
-**썸네일 프롬프트 템플릿**:
+**일러스트 2 프롬프트 템플릿** (성과/임팩트):
 ```
-Abstract conceptual illustration, thought-provoking visual metaphor,
-[핵심 개념 관련 비유], deep blue and gold color palette,
-sophisticated and intellectual atmosphere, no text, no words, no letters
-```
-
-**일러스트 프롬프트 템플릿**:
-```
-Conceptual illustration depicting [인사이트와 어울리는 시각적 비유],
-abstract artistic style, intellectual and sophisticated atmosphere,
-purple and gold palette, high resolution, detailed,
+Professional illustration showing [성과를 상징하는 시각적 비유],
+clean corporate style, blue and white palette,
+achievement and growth theme, data-driven aesthetic, high resolution,
 no text, no words, no letters
 ```
 
-**예시 요소**: 연결된 네트워크, 전략 프레임워크, 변화의 흐름, 계층 구조
+**예시 요소**: Before/After 대비, 데이터 대시보드, 업종별 업무 환경, 성과 그래프 느낌
 
 ---
 
-### Company News
+### Company News (비정기)
 
-**분위기**: 공식적, 행사/수상 분위기, 긍정적이고 밝은 느낌
+**분위기**: 공식적, 축하/성과 분위기, 긍정적이고 밝은 느낌
+
+**컬러 키**: 웜 톤 + 밝은 색상
 
 **썸네일 프롬프트 템플릿**:
 ```
@@ -103,26 +141,17 @@ no text, no words, no letters
 
 ---
 
-### AI Trend
+## 요일별 시각적 일관성 체크
 
-**분위기**: 미래지향적, 테크 트렌드, 역동적이고 혁신적
+| 요소 | 월요일 (트렌드) | 수요일 (문제+실행) | 금요일 (사례) |
+|---|---|---|---|
+| **주 컬러** | 네온 블루+퍼플 | 딥 블루+골드 | 블루+화이트 |
+| **분위기** | 미래지향, 역동 | 긴장→해소 전환 | 전문적, 신뢰 |
+| **구도** | 역동적, 시네마틱 | 추상적, 개념적 | 깔끔, 미니멀 |
+| **스타일** | cutting-edge | thought-provoking | clean corporate |
 
-**썸네일 프롬프트 템플릿**:
-```
-Futuristic technology concept illustration, dynamic and innovative,
-[트렌드 관련 기술 요소], neon blue and purple gradient,
-cutting-edge AI visualization, no text, no words, no letters
-```
-
-**일러스트 프롬프트 템플릿**:
-```
-Futuristic illustration depicting [기술 트렌드와 어울리는 시각적 장면],
-cutting-edge technology aesthetic, neon blue and purple palette,
-dynamic composition, cinematic lighting, high resolution,
-no text, no words, no letters
-```
-
-**예시 요소**: 신경망, 데이터 흐름, AI 파이프라인, 기술 비교
+> 같은 주의 3개 포스트 이미지가 나란히 놓였을 때 시각적으로 구분 가능해야 한다.
+> 컬러 키가 요일을 식별하는 시각적 단서 역할을 한다.
 
 ---
 
@@ -136,4 +165,4 @@ no text, no words, no letters
 
 ---
 
-*최종 업데이트: 2026-03-23 — Nano Banana 2 전용 + 일러스트 방식으로 전환*
+*최종 업데이트: 2026-03-25 — 주간 콘텐츠 전략 기반 요일별 스타일 분화*

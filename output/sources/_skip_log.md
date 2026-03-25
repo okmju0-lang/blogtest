@@ -1,2 +1,3 @@
 - 2026-03-19 17:31 | yt_wP48xJLWuB0 | Error:AttributeError | https://www.youtube.com/watch?v=wP48xJLWuB0
 - 2026-03-23 11:44 | web_c984d06aaf | Error:SSLError | https://example.com
+- 2026-03-25 10:08 | web_3f6fa396cf | TooShort | https://ax-inquiry-system.vercel.app/blog/%EC%BD%94%EB%93%9C%EB%A5%BC-%EC%A7%9C%EB%8A%94-%EC%97%94%EC%A7%80%EB%8B%88%EC%96%B4%EB%8A%94-%EC%82%AC%EB%9D%BC%EC%A7%84%EB%8B%A4-openai-harness-engineering%EC%9D%B4-%EC%A6%9D%EB%AA%85%ED%95%9C-%EA%B2%83
