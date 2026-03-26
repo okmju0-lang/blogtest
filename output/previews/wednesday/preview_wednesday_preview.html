@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="AI를 도입했는데 왜 변화가 없을까? 표면적 원인이 아닌 구조적 문제를 진단하고, 지금 바로 실행할 수 있는 3가지 해결 방법을 제시합니다." />
+<title>AI 도입했는데 달라진 게 없다면, 문제는 AI가 아닙니다 | 매직에꼴 AX 인사이트</title>
+<style>
+
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #333; background: #fff; line-height: 1.8;
+    -webkit-font-smoothing: antialiased;
+  }
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 40px; border-bottom: 1px solid #e5e7eb;
+    position: sticky; top: 0; background: #fff; z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .header-logo { font-size: 18px; font-weight: 700; color: #111; text-decoration: none; }
+  .header-logo span { color: #6366f1; }
+  .header-nav { color: #555; font-size: 15px; border-left: 1px solid #d1d5db; padding-left: 16px; }
+  .header-cta {
+    background: #111; color: #fff; padding: 10px 20px; border-radius: 8px;
+    font-size: 14px; font-weight: 600; text-decoration: none;
+  }
+  .layout {
+    display: grid; grid-template-columns: 220px 1fr 260px;
+    max-width: 1200px; margin: 0 auto; gap: 40px; padding: 40px 24px;
+  }
+  .toc { position: sticky; top: 80px; align-self: start; }
+  .toc-label { font-size: 12px; font-weight: 700; letter-spacing: 1px; margin-bottom: 16px; }
+  .toc-item {
+    display: block; font-size: 14px; color: #6b7280; text-decoration: none;
+    padding: 6px 0; border-left: 2px solid transparent; padding-left: 12px;
+    transition: all 0.2s; line-height: 1.5;
+  }
+  .main-content { max-width: 680px; }
+  .category-badge {
+    display: inline-block; font-size: 13px; font-weight: 600;
+    padding: 4px 14px; border-radius: 20px; margin-bottom: 16px;
+  }
+  .post-title {
+    font-size: 32px; font-weight: 800; color: #111;
+    line-height: 1.35; margin-bottom: 20px; letter-spacing: -0.5px;
+  }
+  .post-meta {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 32px; color: #9ca3af; font-size: 14px;
+  }
+  .author-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 14px; font-weight: 700;
+  }
+  .author-name { color: #374151; font-weight: 600; }
+  .thumbnail { width: 100%; border-radius: 12px; margin-bottom: 32px; }
+  article h2 { font-size: 22px; font-weight: 700; margin-top: 48px; margin-bottom: 16px; }
+  article h3 { font-size: 18px; font-weight: 700; margin-top: 32px; margin-bottom: 12px; }
+  article h4 { font-size: 16px; font-weight: 600; margin-top: 24px; margin-bottom: 8px; }
+  article p { margin: 16px 0; font-size: 16px; color: #374151; }
+  article strong { color: #111; }
+  article a { text-decoration: none; }
+  article a:hover { text-decoration: underline; }
+  article hr { border: none; border-top: 1px solid #e5e7eb; margin: 32px 0; }
+  article li { margin: 8px 0 8px 20px; font-size: 16px; color: #374151; }
+  article .post-image { margin: 28px 0; }
+  article .post-image img { width: 100%; border-radius: 10px; }
+  article .post-image figcaption { font-size: 13px; color: #9ca3af; text-align: center; margin-top: 8px; }
+  article code {
+    background: #f1f5f9; color: #e11d48; padding: 2px 6px; border-radius: 4px;
+    font-size: 14px; font-family: 'Consolas', monospace;
+  }
+  article .code-block {
+    background: #1e293b; color: #e2e8f0; padding: 20px 24px; border-radius: 8px;
+    overflow-x: auto; font-size: 14px; line-height: 1.6; margin: 24px 0;
+  }
+  article .code-block code { background: none; color: inherit; padding: 0; }
+  .sidebar-right { position: sticky; top: 80px; align-self: start; }
+  .sidebar-label { font-size: 15px; font-weight: 600; color: #374151; margin-bottom: 16px; }
+  .related-card {
+    border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 16px; background: #fff; border: 1px solid #f3f4f6;
+  }
+  .related-card-img {
+    width: 100%; height: 140px; display: flex;
+    align-items: center; justify-content: center; color: #fff; font-size: 13px;
+  }
+  .related-card-title { padding: 12px 14px; font-size: 14px; font-weight: 600; color: #374151; line-height: 1.5; }
+  .bottom-nav {
+    display: flex; justify-content: space-between; padding: 24px 40px;
+    border-top: 1px solid #e5e7eb; font-size: 14px;
+  }
+  .bottom-nav a { color: #6b7280; text-decoration: none; }
+  @media (max-width: 1024px) {
+    .layout { grid-template-columns: 1fr; padding: 24px 20px; }
+    .toc, .sidebar-right { display: none; }
+    .post-title { font-size: 26px; }
+    .hero-banner { margin: 0 -20px; border-radius: 0; }
+  }
+
+
+  /* ── Thought Leadership 전용 ── */
+  .hero-banner {
+    background: linear-gradient(135deg, #0c1929 0%, #1e3a5f 60%, #1e40af 100%);
+    border-radius: 16px; padding: 48px 40px; margin-bottom: 36px;
+    border-bottom: 4px solid #f59e0b;
+  }
+  .hero-banner .category-badge {
+    background: rgba(37,99,235,0.2); color: #93c5fd;
+    border: 1px solid rgba(37,99,235,0.3);
+  }
+  .hero-banner .post-title { color: #fff; }
+  .hero-banner .post-meta { color: rgba(255,255,255,0.6); }
+  .hero-banner .author-name { color: #bfdbfe; }
+  .author-avatar { background: linear-gradient(135deg, #1e40af, #3b82f6); }
+  .toc-label { color: #1e40af; }
+  .toc-item:hover { color: #111; border-left-color: #1e40af; }
+  article h2 {
+    color: #1e3a5f;
+    background: linear-gradient(90deg, #fef3c7 0%, transparent 100%);
+    padding: 10px 14px; margin-left: -14px;
+    border-radius: 0 8px 8px 0; border-left: 4px solid #f59e0b;
+  }
+  article a { color: #2563eb; }
+  /* 문제 구간: 어두운 톤 인용 */
+  article blockquote {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a40 100%);
+    border-left: 4px solid #f59e0b; padding: 24px 28px; margin: 28px 0;
+    border-radius: 0 12px 12px 0;
+    box-shadow: 0 2px 8px rgba(245,158,11,0.1);
+    font-size: 16px; line-height: 1.7;
+  }
+  article blockquote strong { color: #92400e; }
+  /* 실행 포인트: 밝은 해결 톤 */
+  article blockquote.action-point {
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border-left: 4px solid #059669;
+    box-shadow: 0 2px 8px rgba(5,150,105,0.1);
+    position: relative; padding-left: 36px;
+  }
+  article blockquote.action-point::before {
+    content: '\2713'; position: absolute; left: 12px; top: 24px;
+    color: #059669; font-size: 18px; font-weight: 700;
+  }
+  article blockquote.action-point strong { color: #065f46; }
+  .table-wrap {
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin: 24px 0;
+  }
+  article th {
+    background: linear-gradient(135deg, #1e3a5f 0%, #1e40af 100%);
+    color: #fff; padding: 14px 20px; text-align: left;
+    font-weight: 600; font-size: 14px;
+  }
+  article td {
+    padding: 13px 20px; border-bottom: 1px solid #e5e7eb;
+    color: #374151; font-size: 14.5px;
+  }
+  article tbody tr:nth-child(even) td { background: #fefce8; }
+  article tbody tr:last-child td { border-bottom: none; }
+  .cta-block {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+    color: #fff; padding: 40px 36px; margin: 48px 0 24px;
+    border-radius: 16px; text-align: center; font-size: 17px; line-height: 1.7;
+    box-shadow: 0 4px 16px rgba(37,99,235,0.2);
+  }
+  .cta-block strong { color: #fff; font-size: 21px; display: block; margin-bottom: 16px; }
+  .cta-block a {
+    color: #1e3a5f; background: #fff; padding: 14px 36px; border-radius: 8px;
+    text-decoration: none; font-weight: 700; font-size: 16px;
+    display: inline-block; margin-top: 8px;
+  }
+  .footer-cta {
+    background: linear-gradient(135deg, #0c1929, #1e40af);
+    color: #fff; text-align: center; padding: 64px 24px; margin-top: 48px;
+  }
+  .footer-cta h2 { font-size: 28px; font-weight: 800; margin-bottom: 12px; }
+  .footer-cta p { font-size: 16px; color: #93c5fd; margin-bottom: 28px; }
+  .footer-cta-btn {
+    display: inline-block; background: #f59e0b; color: #111;
+    padding: 16px 40px; border-radius: 12px; font-size: 16px;
+    font-weight: 700; text-decoration: none;
+  }
+  .related-card-img { background: linear-gradient(135deg, #1e3a5f, #2563eb); }
+  .thumbnail { box-shadow: 0 4px 20px rgba(30,58,95,0.15); }
+
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <a href="#" class="header-logo"><span>magic</span>ecole</a>
+    <span class="header-nav">AX 인사이트</span>
+  </div>
+  <a href="https://ax-inquiry-system.vercel.app/inquiry" class="header-cta">AX 교육 문의하기 &rarr;</a>
+</header>
+
+<div class="layout">
+  <nav class="toc">
+    <div class="toc-label">CONTENTS</div>
+    <a href="#ai를-도입했는데-왜-아무것도-안-변하는가" class="toc-item">AI를 도입했는데 왜 아무것도 안 변하는가</a>
+<a href="#도구가-아니라-구조가-문제다" class="toc-item">도구가 아니라 구조가 문제다</a>
+<a href="#핵심은-업무-재설계다" class="toc-item">핵심은 "업무 재설계"다</a>
+<a href="#지금-바로-이렇게-시작하라" class="toc-item">지금 바로 이렇게 시작하라</a>
+
+  </nav>
+
+  <main class="main-content">
+    <div class="hero-banner">
+      <span class="category-badge">Thought Leadership</span>
+      <h1 class="post-title">AI 도입했는데 달라진 게 없다면, 문제는 AI가 아닙니다</h1>
+      <div class="post-meta">
+        <div class="author-avatar">M</div>
+        <div>
+          <span class="author-name">매직에꼴</span>
+          <span style="margin: 0 6px; opacity: 0.4;">|</span>
+          <span>2026-03-25</span>
+        </div>
+      </div>
+      
+    </div>
+    
+    <article>
+      <p>작년에 AI를 도입한 기업 10곳 중 7곳이 "기대만큼의 변화를 체감하지 못한다"고 답했습니다. 도구는 들여왔는데 업무는 그대로. 교육도 했는데 현장에선 아무도 안 쓰는 상황.</p>
+<p>혹시 여러분의 조직도 비슷한 상황은 아닌가요?</p>
+<p>흥미로운 점은, 이 기업들이 도입한 AI 도구 자체에는 문제가 없었다는 겁니다. 진짜 원인은 전혀 다른 곳에 있었습니다.</p>
+<figure class="post-image"><img src="images/illustration_1.png" alt="AI 도입 후 변화 없는 조직의 모습" /><figcaption>AI 도입 후 변화 없는 조직의 모습</figcaption></figure>
+<h2 id="ai를-도입했는데-왜-아무것도-안-변하는가">AI를 도입했는데 왜 아무것도 안 변하는가</h2>
+<p>현장에서 가장 많이 듣는 이야기는 이렇습니다.</p>
+<p>"ChatGPT 라이선스 깔아줬는데 아무도 안 써요."</p>
+<p>"PoC는 성공했다는데, 그 다음이 없어요."</p>
+<p>"AI 교육 3회 했는데 현업 적용률이 5%도 안 됩니다."</p>
+<p>이건 단순히 직원들이 새로운 걸 싫어해서가 아닙니다. 도구를 깔아두는 것과 업무 방식이 바뀌는 것 사이에는 거대한 간극이 존재하죠.</p>
+<p>그리고 이 간극을 무시한 채 "일단 도입하면 알아서 쓰겠지"라고 생각하는 순간, AI 투자는 매몰 비용이 됩니다.</p>
+<h2 id="도구가-아니라-구조가-문제다">도구가 아니라 구조가 문제다</h2>
+<p>대부분의 기업이 AI 도입을 "도구 교체"로 접근합니다. 엑셀 대신 AI 분석 도구를 쓰고, 수동 검색 대신 RAG 시스템을 넣는 식이죠.</p>
+<p>그런데 도구만 바꾸고 업무 프로세스, 의사결정 구조, 성과 평가 기준은 그대로 두면 어떻게 될까요?</p>
+<div class="table-wrap"><table><thead><tr><th>구분</th><th>표면적 원인</th><th>진짜 원인</th></tr></thead><tbody><tr><td>활용률 저조</td><td>"직원들이 변화를 싫어함"</td><td>기존 업무 프로세스에 AI가 끼어들 자리가 없음</td></tr><tr><td>PoC 이후 정체</td><td>"확산 예산이 부족함"</td><td>PoC 결과를 실무 프로세스에 연결하는 설계가 없음</td></tr><tr><td>교육 효과 없음</td><td>"교육 내용이 어려움"</td><td>교육 후 적용할 구체적 업무 시나리오가 정의되지 않음</td></tr></tbody></table></div>
+<p>여러분의 조직에서도 비슷한 패턴이 보이지 않나요?</p>
+<p>본질적으로, AI 도입의 실패는 기술의 실패가 아니라 <strong>변화관리의 실패</strong>입니다. AI라는 새로운 엔진을 달아놓고, 도로는 예전 그대로 놔둔 셈이죠.</p>
+<h2 id="핵심은-업무-재설계다">핵심은 "업무 재설계"다</h2>
+<blockquote><strong>핵심</strong>: AI 도입의 성패는 도구 선택이 아니라, AI가 작동할 수 있는 업무 구조를 만드는 데 달려 있다.</blockquote>
+<p>성공하는 기업들의 공통점은 명확합니다. AI를 도입하기 전에, 또는 도입과 동시에 <strong>업무 프로세스 자체를 재설계</strong>합니다.</p>
+<figure class="post-image"><img src="images/illustration_2.png" alt="업무 재설계를 통한 AI 정착 구조" /><figcaption>업무 재설계를 통한 AI 정착 구조</figcaption></figure>
+<p>"어떤 업무에, 어떤 단계에서, AI가 어떤 역할을 하는가"를 명확히 정의하는 거죠. 이게 없으면 AI는 그냥 또 하나의 안 쓰는 소프트웨어가 됩니다.</p>
+<p>구체적으로 3가지 전환이 필요합니다.</p>
+<p><strong>첫째, 도구 중심에서 프로세스 중심으로.</strong> AI를 "쓸 수 있는 곳"이 아니라 "반드시 써야 하는 단계"에 배치합니다. 선택이 아니라 프로세스의 일부로 만드는 겁니다.</p>
+<p><strong>둘째, 일회성 교육에서 업무 내재화로.</strong> "AI 사용법"을 가르치는 게 아니라, "이 업무를 AI로 처리하는 방법"을 가르칩니다. 추상적 기능 교육이 아니라 구체적 업무 시나리오 훈련이죠.</p>
+<p><strong>셋째, PoC 성공에서 운영 설계로.</strong> "가능하다"를 증명하는 데서 멈추지 않고, "매일 돌아가는 구조"를 설계합니다. PoC와 실운영 사이의 다리를 놓는 겁니다.</p>
+<h2 id="지금-바로-이렇게-시작하라">지금 바로 이렇게 시작하라</h2>
+<p>이론은 충분합니다. 오늘 당장 시작할 수 있는 3가지 액션을 제안합니다.</p>
+<blockquote class="action-point"><strong>실행 포인트 1: 업무 프로세스 맵을 펼쳐놓고 "AI가 들어갈 자리"를 표시하라.</strong><br>
+팀의 주요 업무 흐름을 5~7단계로 정리하고, 각 단계에서 AI가 대체/보조할 수 있는 부분을 구체적으로 지정합니다. "AI 활용"이라는 막연한 목표가 "3단계 데이터 수집을 AI로 자동화"라는 명확한 과제로 바뀝니다.</blockquote>
+<blockquote class="action-point"><strong>실행 포인트 2: "AI 없이는 안 되는" 업무 시나리오 3개를 만들어라.</strong><br>
+AI를 선택 사항이 아니라 필수 단계로 만드는 겁니다. 예를 들어, 보고서 초안을 AI로 먼저 생성한 뒤 검토하는 프로세스를 공식화하면, 자연스럽게 활용률이 올라갑니다.</blockquote>
+<blockquote class="action-point"><strong>실행 포인트 3: PoC 결과물에 "운영 설계서"를 붙여라.</strong><br>
+PoC가 끝나면 "성공/실패" 판정에서 멈추지 말고, "이걸 매일 돌리려면 무엇이 필요한가"를 정리한 운영 설계서를 작성합니다. 담당자, 데이터 파이프라인, 예외 처리 절차까지 포함해야 합니다.</blockquote>
+<p>이 3가지를 실행하는 것만으로도, AI가 "도입한 도구"에서 "작동하는 시스템"으로 전환되는 첫 단계를 밟게 됩니다.</p>
+<p>하지만 업무 재설계는 혼자 하기엔 복잡합니다. 어디서부터 손대야 할지, 우리 업종에 맞는 AI 적용 포인트가 어디인지, 현장을 아는 전문가의 눈이 필요한 순간이 있죠.</p>
+<hr />
+<div class="cta-block"><strong>우리 조직의 AI, 도구에서 시스템으로 전환할 준비가 되셨나요?</strong><br>
+<a href="https://ax-inquiry-system.vercel.app/inquiry">매직에꼴 AX 컨설팅 알아보기 -></a></div>
+<hr />
+<p><strong>참고 자료</strong>
+<li>[프리뷰용 샘플 — 실제 발행 시 소스 기반 참고 자료로 교체]</li></p>
+    </article>
+  </main>
+
+  <aside class="sidebar-right">
+    <div class="sidebar-label">이런 글은 어때요?</div>
+    <div class="related-card">
+      <div class="related-card-img">관련 글 썸네일</div>
+      <div class="related-card-title">AI 도입했는데 달라진 게 없다면, 문제는 AI가 아닙니다</div>
+    </div>
+    <div class="related-card">
+      <div class="related-card-img">관련 글 썸네일</div>
+      <div class="related-card-title">제조 R&amp;D 기술 문서 분석, 3일에서 4시간으로</div>
+    </div>
+  </aside>
+</div>
+
+<section class="footer-cta">
+  <h2>우리 기업에 맞는 AX 교육이 궁금하신가요?</h2>
+  <p>3분 무료 진단으로 최적의 AX 교육 솔루션을 추천해 드립니다.</p>
+  <a href="https://ax-inquiry-system.vercel.app/inquiry" class="footer-cta-btn">무료 AX 진단 받기 &rarr;</a>
+</section>
+
+<div class="bottom-nav">
+  <a href="#">&larr; 블로그 목록으로</a>
+  <a href="#">교육 문의하기</a>
+</div>
+
+</body>
+</html>
