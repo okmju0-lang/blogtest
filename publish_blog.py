@@ -28,7 +28,260 @@ import re
 import base64
 import requests
 
-from publish_stibee import md_to_html, apply_inline_styles, AVAILABLE_THEMES
+
+
+# ─── 마크다운 → HTML 변환 ───
+
+def md_to_html(md_text):
+    """마크다운 텍스트를 기본 HTML로 변환한다."""
+    html = md_text
+
+    # 코드 블록
+    def convert_code_block(match):
+        code = match.group(2).strip()
+        code = code.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        return f"<pre><code>{code}</code></pre>"
+    html = re.sub(r"```(\w*)\n(.*?)```", convert_code_block, html, flags=re.DOTALL)
+
+    # 인라인 코드
+    html = re.sub(r"`([^`]+)`", r"<code>\1</code>", html)
+
+    # 이미지
+    html = re.sub(
+        r"!\[([^\]]*)\]\(([^)]+)\)",
+        r'<img src="\2" alt="\1" style="max-width:100%;height:auto;" />',
+        html,
+    )
+
+    # 링크
+    html = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', html)
+
+    # 헤딩
+    html = re.sub(r"^#### (.+)$", r"<h4>\1</h4>", html, flags=re.MULTILINE)
+    html = re.sub(r"^### (.+)$", r"<h3>\1</h3>", html, flags=re.MULTILINE)
+    html = re.sub(r"^## (.+)$", r"<h2>\1</h2>", html, flags=re.MULTILINE)
+    html = re.sub(r"^# (.+)$", r"<h1>\1</h1>", html, flags=re.MULTILINE)
+
+    # 굵은 글씨 / 기울임
+    html = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", html)
+    html = re.sub(r"\*(.+?)\*", r"<em>\1</em>", html)
+
+    # 인용 블록 + CTA 블록
+    def convert_blockquotes(text):
+        cta_keywords = ("컨설팅", "문의", "상담")
+        cta_actions = ("확인해보세요", "시작해보세요", "만나보세요", "알아보기")
+        lines = text.split("\n")
+        result = []
+        in_quote = False
+        quote_lines = []
+        for line in lines:
+            if line.startswith("> "):
+                if not in_quote:
+                    in_quote = True
+                    quote_lines = []
+                quote_lines.append(line[2:])
+            else:
+                if in_quote:
+                    content = "<br>\n".join(quote_lines)
+                    joined = " ".join(quote_lines)
+                    is_cta = any(k in joined for k in cta_keywords) and any(a in joined for a in cta_actions)
+                    if is_cta:
+                        result.append('<div class="cta-block">' + content + "</div>")
+                    else:
+                        result.append("<blockquote>" + content + "</blockquote>")
+                    in_quote = False
+                    quote_lines = []
+                result.append(line)
+        if in_quote:
+            content = "<br>\n".join(quote_lines)
+            joined = " ".join(quote_lines)
+            is_cta = any(k in joined for k in cta_keywords) and any(a in joined for a in cta_actions)
+            if is_cta:
+                result.append('<div class="cta-block">' + content + "</div>")
+            else:
+                result.append("<blockquote>" + content + "</blockquote>")
+        return "\n".join(result)
+    html = convert_blockquotes(html)
+
+    # 테이블
+    def convert_tables(text):
+        lines = text.split("\n")
+        result = []
+        i = 0
+        while i < len(lines):
+            if (i + 1 < len(lines)
+                    and "|" in lines[i]
+                    and re.match(r"^\|[\s\-:|]+\|$", lines[i + 1].strip())):
+                table_lines = [lines[i]]
+                i += 2
+                while i < len(lines) and "|" in lines[i] and lines[i].strip().startswith("|"):
+                    table_lines.append(lines[i])
+                    i += 1
+                header_cells = [c.strip() for c in table_lines[0].strip().strip("|").split("|")]
+                thead = "<tr>" + "".join(f"<th>{c}</th>" for c in header_cells) + "</tr>"
+                tbody_rows = []
+                for row_line in table_lines[1:]:
+                    cells = [c.strip() for c in row_line.strip().strip("|").split("|")]
+                    tbody_rows.append("<tr>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>")
+                result.append(f'<div class="table-wrap"><table><thead>{thead}</thead><tbody>{"".join(tbody_rows)}</tbody></table></div>')
+            else:
+                result.append(lines[i])
+                i += 1
+        return "\n".join(result)
+    html = convert_tables(html)
+
+    # 구분선
+    html = re.sub(r"^---+$", r"<hr />", html, flags=re.MULTILINE)
+
+    # 목록
+    html = re.sub(r"^- (.+)$", r"<li>\1</li>", html, flags=re.MULTILINE)
+    html = re.sub(r"^\d+\. (.+)$", r"<li>\1</li>", html, flags=re.MULTILINE)
+
+    # 문단
+    paragraphs = re.split(r"\n\n+", html)
+    wrapped = []
+    for p in paragraphs:
+        p = p.strip()
+        if not p:
+            continue
+        if re.match(r"<(h[1-6]|li|hr|img|div|table|ul|ol|blockquote|pre)", p):
+            wrapped.append(p)
+        else:
+            wrapped.append(f"<p>{p}</p>")
+
+    return "\n".join(wrapped)
+
+
+# ─── 인라인 스타일 ───
+
+INLINE_STYLES = {
+    "p": "margin:16px 0;",
+    "li": "margin:8px 0;",
+    "img": "border-radius:8px;margin:16px 0;max-width:100%;height:auto;",
+    "body": "font-family:'Pretendard',-apple-system,sans-serif;line-height:1.8;color:#333;max-width:680px;margin:0 auto;padding:20px;",
+    "h1": "font-size:28px;margin-top:32px;color:#111;",
+    "h2": "font-size:22px;margin-top:28px;color:#1a1a1a;",
+    "h3": "font-size:18px;margin-top:24px;color:#1a1a1a;",
+    "h4": "font-size:16px;margin-top:20px;",
+    "a": "color:#2563eb;",
+    "hr": "border:none;border-top:1px solid #e5e7eb;margin:32px 0;",
+    "strong": "color:#111;",
+    "code": "background:#f1f5f9;color:#e11d48;padding:2px 6px;border-radius:4px;font-size:14px;font-family:'Consolas','Monaco',monospace;",
+    "pre": "background:#1e293b;color:#e2e8f0;padding:20px 24px;border-radius:8px;overflow-x:auto;font-size:14px;line-height:1.6;margin:24px 0;",
+    "blockquote": "background-color:#f0f4ff;background:linear-gradient(135deg,#f0f4ff 0%,#e8eeff 100%);border-left:4px solid #2563eb;padding:24px 28px;margin:32px 0;border-radius:0 12px 12px 0;box-shadow:0 2px 8px rgba(37,99,235,0.08);font-size:16px;line-height:1.7;",
+    "blockquote_strong": "color:#1e40af;",
+    "table_wrap": "border-radius:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 2px 12px rgba(0,0,0,0.08);margin:24px 0;",
+    "table": "width:100%;border-collapse:collapse;font-size:15px;min-width:320px;",
+    "th": "background-color:#1e293b;background:linear-gradient(135deg,#1e293b 0%,#334155 100%);color:#fff;padding:14px 20px;text-align:left;font-weight:600;font-size:14px;letter-spacing:0.3px;white-space:nowrap;",
+    "td": "padding:13px 20px;border-bottom:1px solid #e5e7eb;color:#374151;font-size:14.5px;word-break:keep-all;",
+    "td_even": "padding:13px 20px;border-bottom:1px solid #e5e7eb;color:#374151;font-size:14.5px;word-break:keep-all;background:#f8fafc;",
+    "td_last": "padding:13px 20px;border-bottom:none;color:#374151;font-size:14.5px;word-break:keep-all;",
+    "cta_block": "background-color:#1e3a5f;background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);color:#fff;padding:40px 36px;margin:48px 0 24px;border-radius:16px;text-align:center;font-size:17px;line-height:1.7;box-shadow:0 4px 16px rgba(37,99,235,0.2);",
+    "cta_strong": "color:#fff;font-size:21px;display:block;margin-bottom:16px;",
+    "cta_a": "color:#1e3a5f;background:#fff;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;display:inline-block;margin-top:8px;",
+}
+
+
+def apply_inline_styles(html_body):
+    """HTML 본문의 태그에 인라인 style 속성을 삽입한다."""
+    s = INLINE_STYLES
+    result = html_body
+
+    # 이미지
+    result = re.sub(
+        r'<img ([^>]*)style="[^"]*"([^>]*)/>',
+        lambda m: f'<img {m.group(1)}style="{s["img"]}"{m.group(2)}/>',
+        result,
+    )
+
+    # CTA 블록
+    def style_cta_block(match):
+        block = match.group(0)
+        block = block.replace('<div class="cta-block">', f'<div style="{s["cta_block"]}">')
+        block = re.sub(r"<strong>", f'<strong style="{s["cta_strong"]}">', block)
+        block = re.sub(r"<a ", f'<a style="{s["cta_a"]}" ', block)
+        return block
+    result = re.sub(r'<div class="cta-block">.*?</div>', style_cta_block, result, flags=re.DOTALL)
+
+    # blockquote 내부 strong
+    def style_blockquote(match):
+        block = match.group(0)
+        block = re.sub(r"<strong>", f'<strong style="{s["blockquote_strong"]}">', block)
+        return block
+    result = re.sub(r"<blockquote>.*?</blockquote>", style_blockquote, result, flags=re.DOTALL)
+
+    # table-wrap
+    result = result.replace('<div class="table-wrap">', f'<div style="{s["table_wrap"]}">')
+
+    # 테이블 행 스타일
+    def style_table(match):
+        table_html = match.group(0)
+        table_html = table_html.replace("<table>", f'<table style="{s["table"]}">')
+        table_html = re.sub(r"<th>", f'<th style="{s["th"]}">', table_html)
+        rows = re.findall(r"<tr><td.*?</tr>", table_html)
+        for idx, row in enumerate(rows):
+            is_last = (idx == len(rows) - 1)
+            is_even = (idx % 2 == 1)
+            if is_last and is_even:
+                style = s["td_last"].rstrip(";") + ";background:#f8fafc;"
+            elif is_last:
+                style = s["td_last"]
+            elif is_even:
+                style = s["td_even"]
+            else:
+                style = s["td"]
+            styled_row = re.sub(r"<td>", f'<td style="{style}">', row)
+            table_html = table_html.replace(row, styled_row, 1)
+        return table_html
+    result = re.sub(r"<table>.*?</table>", style_table, result, flags=re.DOTALL)
+
+    # 단순 태그
+    for tag in ("h1", "h2", "h3", "h4", "p", "li", "hr", "strong", "blockquote", "a", "pre", "code"):
+        result = re.sub(
+            rf"<{tag}(?![^>]*style=)([^>]*)>",
+            f'<{tag} style="{s[tag]}"\\1>',
+            result,
+        )
+
+    # pre 안의 code 스타일 제거
+    def strip_code_style_in_pre(m):
+        inner = m.group(1)
+        inner = re.sub(r'<code style="[^"]*"', "<code", inner)
+        return f'<pre style="{s["pre"]}"{inner}'
+    result = re.sub(r'<pre style="[^"]*"(.*?</pre>)', strip_code_style_in_pre, result, flags=re.DOTALL)
+
+    return result
+
+
+def host_local_images(html, post_dir, imgbb_api_key):
+    """HTML 내 로컬 이미지를 imgbb에 업로드하고 호스팅 URL로 치환한다."""
+    upload_cache = {}
+
+    def replace_src(match):
+        prefix = match.group(1)
+        src = match.group(2)
+        suffix = match.group(3)
+        if src.startswith(("http://", "https://", "data:")):
+            return match.group(0)
+        img_path = os.path.normpath(os.path.join(post_dir, src))
+        if not os.path.exists(img_path):
+            return match.group(0)
+        if img_path in upload_cache:
+            hosted_url = upload_cache[img_path]
+        else:
+            print(f"  이미지 업로드 중: {os.path.basename(img_path)}")
+            hosted_url = upload_image_to_imgbb(img_path, imgbb_api_key)
+            upload_cache[img_path] = hosted_url
+        if hosted_url:
+            return f'{prefix}{hosted_url}{suffix}'
+        return match.group(0)
+
+    return re.sub(r'(<img\s[^>]*src=")([^"]+)(")', replace_src, html)
+
+
+def render_post_markdown_html(body):
+    """마크다운 본문을 블로그용 HTML로 변환한다. (md_to_html 래퍼)"""
+    return md_to_html(body)
 
 # Windows 콘솔 인코딩 문제 방지
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
@@ -218,10 +471,6 @@ def main():
         "--author", default="매직에꼴",
         help="저자명 (기본: 매직에꼴)",
     )
-    parser.add_argument(
-        "--theme", choices=AVAILABLE_THEMES, default=None,
-        help=f"디자인 테마 ({', '.join(AVAILABLE_THEMES)}). 미지정 시 frontmatter의 theme 필드 → 기본 blue",
-    )
     args = parser.parse_args()
 
     # .env 로드
@@ -287,15 +536,11 @@ def main():
     # 읽기 시간
     reading_time = calculate_reading_time(body)
 
-    # 테마 결정: CLI --theme > frontmatter theme > 기본 blue
-    theme = args.theme or meta.get("theme", "blue").strip('"').strip("'")
-    if theme not in AVAILABLE_THEMES:
-        print(f"[경고] 알 수 없는 테마 '{theme}'. 기본 테마 'blue'를 사용합니다.")
-        theme = "blue"
-
     # 마크다운 → HTML 변환 (블로그 프론트엔드가 HTML을 직접 렌더링)
-    html_body = md_to_html(body)
-    html_body = apply_inline_styles(html_body, theme=theme)
+    html_body = render_post_markdown_html(body)
+    if imgbb_key and imgbb_key not in imgbb_placeholders:
+        html_body = host_local_images(html_body, post_dir, imgbb_key)
+    html_body = apply_inline_styles(html_body)
 
     # API 페이로드 구성
     payload = {
@@ -314,7 +559,6 @@ def main():
 
     mode = "발행" if args.publish else "초안 저장"
     print(f"  카테고리: {category}")
-    print(f"  테마: {theme}")
     print(f"  슬러그: {slug}")
     print(f"  모드: {mode}")
     print(f"  읽기 시간: {reading_time}분")

@@ -22,8 +22,7 @@
 | Python 의존성 설치 | `pip list` 또는 스크립트 실행 | `pip install -r requirements.txt` 실행 안내 |
 | `output/` 디렉토리 구조 | 디렉토리 존재 확인 | `file-manager` 스킬로 자동 생성 |
 | `brand-voice-guide.md` 존재 | 파일 존재 확인 | 브랜드 보이스 초기화 워크플로우 안내 (하단 참조) |
-| `IMGBB_API_KEY` 설정 | `.env` 읽기 | 이메일 이미지 호스팅 불가 — 사용자에게 경고 (이미지 없이 텍스트만 발송 가능) |
-| `STIBEE_API_KEY` 설정 | `.env` 읽기 | 스티비 이메일 발송 불가 — 사용자에게 경고 후 발송 스킵 모드로 진행 가능 |
+| `IMGBB_API_KEY` 설정 | `.env` 읽기 | 블로그 이미지 호스팅 불가 — 사용자에게 경고 |
 
 ---
 
@@ -130,8 +129,10 @@
 - 내용: 메타정보 (작성일시, 카테고리, 제공자), 브리핑 본문, 참고 URL (있을 경우)
 
 **단계 1 — 초고 작성** → **Writer 서브에이전트 호출**
-- 전달: 글감 카드/브리핑 경로 + 소스 파일 경로 + 카테고리 코드
+- 전달 전에 `output/variant_registry.md`를 확인하여 해당 카테고리의 직전 변형을 파악한다.
+- 전달: 글감 카드/브리핑 경로 + 소스 파일 경로 + 카테고리 코드 + **직전 변형 정보**
 - Writer가 해당 카테고리 템플릿(`/.claude/agents/writer/references/templates/`)을 참조하여 초고를 작성한다.
+- Writer는 직전 변형과 다른 변형을 우선 선택한다.
 - 출력: `output/drafts/{post_id}/draft_v1.md`
 - `post_id` 형식: `post_{YYYYMMDD}_{n}`
 
@@ -180,7 +181,10 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
   - **핵심 내용 2**: 두 번째로 중요한 포인트/인사이트 (일러스트 2용)
   - **종합 요약**: 글 전체를 아우르는 주제 (썸네일용)
 - 각각에 대해 영문 이미지 생성 프롬프트를 작성한다. (`references/image-style-guide.md` 참조)
-- 프롬프트 끝에 반드시 `no text, no words, no letters` 포함.
+- **프롬프트 유형 판단**:
+  - **썸네일**: 반드시 추상 일러스트. `no text, no words, no letters` 포함.
+  - **본문 이미지**: 글에 비교 데이터/프로세스 흐름/통계 수치/분류 체계가 있으면 → **인포그래픽** 프롬프트 (텍스트 허용, 한글 우선). 없으면 → 일반 일러스트 (`no text` 포함).
+- 인포그래픽 프롬프트 시 `scripts/style_prompts.py`의 스타일 프리픽스 활용 가능.
 
 8b. **이미지 생성** (API 호출 3회)
 - `image-generator` 스킬의 `generate_image.py`를 batch 모드로 실행한다.
@@ -196,6 +200,12 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
   - `output/drafts/{post_id}/images/thumbnail.png` (16:9)
   - `output/drafts/{post_id}/images/illustration_1.png` (4:3)
   - `output/drafts/{post_id}/images/illustration_2.png` (4:3)
+
+8b-1. **텍스트 검증** (필수, 생성 직후)
+- 생성된 이미지 3장을 Read로 열어 시각적으로 확인한다.
+- 텍스트 포함 이미지: 글자 깨짐, 오타, 잘림, 중복, 의미 불일치 확인.
+- 텍스트 없는 이미지: 의도치 않은 텍스트 삽입 여부 확인.
+- 이상 발견 시: 수정 프롬프트로 해당 이미지만 재생성 (이미지당 최대 2회).
 
 8c. **이미지 삽입**
 - `thumbnail.png`를 frontmatter `thumbnail` 속성에 연결한다.
@@ -214,6 +224,7 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 
 **단계 9 — 담당자 피드백 최종 반영** → **Writer 서브에이전트 호출** + 필요 시 이미지 재생성
 - 출력: `output/posts/{post_id}/post.md` + `output/posts/{post_id}/images/`
+- `output/variant_registry.md`에 해당 포스트의 카테고리 + 변형을 기록한다.
 
 **단계 10 — 비주얼 강화** → **Visual Editor 서브에이전트 호출**
 - 전달: `output/posts/{post_id}/post.md` 경로 + `output/posts/{post_id}/images/` 경로 + 카테고리 코드
@@ -237,19 +248,10 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 
 - 출력: `output/posts/{post_id}/visual_report.md` (비주얼 편집 요약)
 
-**단계 11 — 발행 채널 선택 + 실행** (Orchestrator가 직접 수행)
+**단계 11 — 블로그 발행** (Orchestrator가 직접 수행)
 
-단계 10 완료 후, 담당자에게 발행 채널을 확인한다. (**Human-in-the-loop**)
+단계 10 완료 후, 담당자에게 발행 여부를 확인한다. (**Human-in-the-loop**)
 
-```
-[발행 채널 선택]
-- (A) 블로그 발행: ax-inquiry-system 어드민에 글 등록
-- (B) 스티비 이메일 발송: 뉴스레터 이메일 발송
-- (C) 둘 다
-- (D) 스킵
-```
-
-**11a. 블로그 발행** (담당자가 A 또는 C 선택 시)
 - `publish_blog.py` 스크립트를 실행한다.
 - 초안 저장: `python publish_blog.py output/posts/{post_id}/post.md`
 - 즉시 발행: `python publish_blog.py output/posts/{post_id}/post.md --publish`
@@ -264,32 +266,6 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 - 발행 실패 시: 에러 메시지를 안내하고 1회 재시도 후 에스컬레이션
 - 출력: 콘솔에 발행 결과 (글 ID, 블로그 URL)
 
-**11b. 이메일 미리보기** (담당자가 B 또는 C 선택 시)
-- `publish_stibee.py`를 `--preview` 모드로 실행하여 프리뷰 파일을 생성한다.
-- 실행 명령: `python publish_stibee.py output/posts/{post_id}/post.md --preview`
-- 출력:
-  - `output/posts/{post_id}/post_preview.html` (브라우저 확인용)
-  - `output/posts/{post_id}/post_stibee.html` (스티비 HTML 에디터 붙여넣기용)
-- 담당자에게 프리뷰 파일 경로를 안내하고, 이메일 내용을 확인하도록 요청한다.
-- 담당자의 응답을 기다린다: **승인(즉시/예약)** 또는 **수정 요청** 또는 **발송 스킵**.
-- 수정 요청 시: Writer에게 수정 지시 후 프리뷰를 재생성한다.
-
-**11c. 이메일 발송** (담당자 승인 후)
-- 담당자가 승인하면 `publish_stibee.py` 스크립트를 실행한다.
-- 즉시 발송: `python publish_stibee.py output/posts/{post_id}/post.md`
-- 예약 발송: `python publish_stibee.py output/posts/{post_id}/post.md --reserve YYYYMMDDhhmmss`
-- 스크립트 동작 흐름:
-  1. `post.md`의 frontmatter에서 제목 추출
-  2. 마크다운 본문을 HTML로 변환 (인라인 스타일 적용)
-  3. 로컬 이미지를 imgbb에 업로드하여 외부 URL로 치환
-  4. 스티비 API로 이메일 생성 (`POST /v2/emails`)
-  5. HTML 콘텐츠 설정 (`POST /v2/emails/{id}/content`)
-  6. 즉시 발송 (`POST /v2/emails/{id}/send`) 또는 예약 발송 (`POST /v2/emails/{id}/reserve`)
-- 필수 환경 변수: `STIBEE_API_KEY`, `STIBEE_LIST_ID`, `STIBEE_SENDER_EMAIL`, `STIBEE_SENDER_NAME`
-- 환경 변수 미설정 시: 사용자에게 안내하고 발송 단계를 스킵한다.
-- 발송 실패 시: 에러 메시지를 사용자에게 안내하고 1회 재시도 후 에스컬레이션한다.
-- 출력: 콘솔에 발송 결과 (이메일 ID, 성공/실패 상태)
-
 ### 병렬 처리 규칙 (워크플로우 2)
 
 - **단계 4 + 6**: 브랜드 보이스 피드백과 SEO 피드백은 **순차 실행**. SEO가 브랜드 반영본을 기준으로 분석해야 한다.
@@ -297,34 +273,41 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 - **단계 8 전체**: 텍스트 최종본(단계 7)이 확정된 후에만 시작한다.
 - **단계 10a + 10b**: 스크린샷 캡처와 다이어그램 전문화는 **병렬 실행** 가능.
 - **단계 10c**: 10a, 10b 모두 완료 후 **순차 실행**.
-- **단계 11**: 단계 10 완료 후 **순차 실행**. 담당자 채널 선택 + 승인 필요.
-- **단계 11a + 11b**: 블로그 발행과 이메일 프리뷰 생성은 **병렬 실행** 가능 (둘 다 선택 시).
+- **단계 11**: 단계 10 완료 후 **순차 실행**. 담당자 승인 필요.
 
 ---
 
 ## 이미지 생성 규칙
 
+> 상세 스타일 규칙은 `/.claude/skills/image-generator/references/image-style-guide.md` 참조.
+> 아래는 핵심 요약이며, 충돌 시 image-style-guide.md가 우선한다.
+
 ### 포스트당 이미지 구성 (고정)
 
-모든 카테고리에 동일하게 적용되며, 포스트당 정확히 **3장** + 선택적 다이어그램으로 구성한다.
+포스트당 정확히 **3장** + 선택적 다이어그램.
 
-| 순번 | 유형 | 비율 | 용도 | 생성 방법 |
+| 순번 | 유형 | 비율 | 스타일 방향 | 생성 방법 |
 |---|---|---|---|---|
-| 1 | thumbnail | 16:9 | 블로그 상단 대표 이미지 | Nano Banana 2 API |
-| 2 | illustration_1 | 4:3 | 핵심 내용 1 시각화 | Nano Banana 2 API |
-| 3 | illustration_2 | 4:3 | 핵심 내용 2 시각화 | Nano Banana 2 API |
+| 1 | thumbnail | 16:9 | **추상 일러스트** (인포그래픽 금지) | Nano Banana 2 API |
+| 2 | illustration_1 | 4:3 | **인포그래픽 우선**, 해당 없으면 일러스트 | Nano Banana 2 API |
+| 3 | illustration_2 | 4:3 | **인포그래픽 우선**, 해당 없으면 일러스트 | Nano Banana 2 API |
 | (선택) | diagram | - | 구조/흐름 시각화 | LLM Mermaid 코드 + diagram-renderer |
 
 ### 생성 도구
 
 - **thumbnail / illustration**: Nano Banana 2 (`gemini-3.1-flash-image-preview`) API 전용. 포스트당 API 호출 3회 엄수.
 - **diagram**: LLM이 Mermaid 코드 직접 작성 → `diagram-renderer` 스킬로 검증 + 렌더링 (API 비용 없음)
+- **인포그래픽 스타일**: `/.claude/skills/image-generator/scripts/style_prompts.py`의 프리픽스 활용 가능.
+
+### 텍스트 검증 (필수)
+
+이미지 생성 직후 Read로 열어 검증한다. 텍스트 깨짐/오타/잘림/중복/의도치 않은 텍스트 삽입 시 수정 프롬프트로 재생성 (이미지당 최대 2회).
 
 ### 비용 최적화 원칙
 
 - API 호출은 **이미지 생성에만** 사용한다. 프롬프트 작성, 핵심 내용 추출 등 텍스트 분석은 LLM이 직접 수행한다.
 - 포스트당 3회 호출을 엄수한다. 추가 이미지가 필요하면 담당자 승인 후에만 생성한다.
-- 프롬프트 실패 시 프롬프트를 수정하여 재시도하되, 재시도는 이미지당 최대 1회로 제한한다.
+- 프롬프트 실패 시 프롬프트를 수정하여 재시도하되, 재시도는 이미지당 최대 2회로 제한한다.
 
 ---
 
@@ -356,7 +339,6 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 | `diagram-renderer` | 단계 8d: Mermaid 다이어그램 렌더링 | Orchestrator |
 | `schema-validator` | 각 단계 산출물 생성 직후 | Orchestrator |
 | `publish_blog.py` | 단계 11a: 블로그 발행 실행 시 | Orchestrator |
-| `publish_stibee.py` | 단계 11b~11c: 이메일 프리뷰/발송 시 | Orchestrator |
 
 ---
 
@@ -373,11 +355,11 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 | 브랜드 피드백 (4) | 가이드 항목 참조 포함 | 1회 재시도 |
 | SEO 피드백 (6) | 제목/메타/키워드/헤딩 항목 포함 | 1회 재시도 |
 | 핵심 내용 추출 + 프롬프트 (8a) | 핵심 내용 2가지 + 프롬프트 3개 작성 완료 | LLM 직접 수행 (API 없음) |
-| 이미지 생성 (8b) | 3장 모두 파일 존재 + 각 10KB 이상 | 이미지당 1회 재시도. API 키 오류 시 즉시 중단 |
+| 이미지 생성 (8b) | 3장 모두 파일 존재 + 각 10KB 이상 | 이미지당 2회 재시도. API 키 오류 시 즉시 중단 |
+| 텍스트 검증 (8b-1) | 텍스트 깨짐/오타/잘림/중복 없음 | 수정 프롬프트로 재생성 (이미지당 최대 2회) |
 | 스크린샷 캡처 (10a) | 파일 존재 + 캡처 성공 | 대체 URL 1회 시도 후 스킵 |
 | 다이어그램 전문화 (10b) | 렌더링 성공 | 실패 시 기존 다이어그램 유지 |
 | 블로그 발행 (11a) | HTTP 200 응답 + 글 ID 반환 | 1회 재시도 후 에스컬레이션. 슬러그 중복 시 슬러그 수정 후 재시도 |
-| 스티비 이메일 발송 (11c) | HTTP 200 응답 + 이메일 ID 반환 | 1회 재시도 후 에스컬레이션. API 키 오류(401/403) 시 즉시 중단 + 사용자 안내 |
 
 ---
 
@@ -421,8 +403,7 @@ Reviewer가 단계 2에서 기밀 필터링을 수행한다.
 | 최종 이미지 | `output/posts/{post_id}/images/*.png` |
 | 스크린샷 (Visual Editor) | `output/posts/{post_id}/images/screenshot_{n}.png` |
 | 비주얼 리포트 | `output/posts/{post_id}/visual_report.md` |
-| 이메일 프리뷰 (브라우저용) | `output/posts/{post_id}/post_preview.html` |
-| 이메일 프리뷰 (스티비 에디터용) | `output/posts/{post_id}/post_stibee.html` |
+| 변형 레지스트리 | `output/variant_registry.md` |
 
 `post_id` 형식: `post_{YYYYMMDD}_{n}` (예: `post_20260319_1`)
 
@@ -433,7 +414,7 @@ Reviewer가 단계 2에서 기밀 필터링을 수행한다.
 Human-in-the-loop가 필요한 시점:
 1. **글감 선택** (워크플로우 1 단계 3.5): 글감 후보 리스트를 출력하고 선택을 기다린다.
 2. **최종 검토** (워크플로우 2 단계 8.5): 텍스트 최종본 + 이미지를 안내하고 승인/피드백을 기다린다.
-3. **발행 채널 선택** (워크플로우 2 단계 11): 블로그 발행 / 이메일 발송 / 둘 다 / 스킵 중 선택 확인.
+3. **발행 확인** (워크플로우 2 단계 11): 블로그 발행 여부 확인.
 4. **에스컬레이션**: 기밀 노출 의심 또는 2회 루프 후 critical 잔존 시 즉시 보고한다.
 
 담당자에게 질문할 때는 다음 형식을 사용한다:
@@ -664,20 +645,11 @@ Orchestrator는 각 단계를 종료하고 다음 단계로 넘어가기 전에 
 - [ ] Visual Editor 단계(단계 10)가 완료되었는가? (`visual_report.md` 존재)
 - [ ] 스크린샷에 출처 캡션이 모두 포함되어 있는가?
 
-### 발행 채널 선택 + 실행 시 (단계 11)
+### 블로그 발행 시 (단계 11)
 
-- [ ] 담당자가 발행 채널을 선택했는가? (블로그/이메일/둘 다/스킵)
-
-**블로그 발행 (11a) 선택 시:**
+- [ ] 담당자가 발행을 승인했는가?
 - [ ] `IMGBB_API_KEY` 환경 변수가 설정되었는가?
 - [ ] `publish_blog.py` 실행이 성공했는가? (글 ID + 블로그 URL 반환 확인)
-
-**이메일 발송 (11b~11c) 선택 시:**
-- [ ] 담당자가 이메일 프리뷰를 확인하고 발송을 승인했는가? (즉시/예약/스킵)
-- [ ] `STIBEE_API_KEY`, `STIBEE_LIST_ID`, `STIBEE_SENDER_EMAIL`, `STIBEE_SENDER_NAME` 환경 변수가 설정되었는가?
-- [ ] 이메일 생성이 성공했는가? (이메일 ID 반환 확인)
-- [ ] HTML 콘텐츠 설정이 성공했는가?
-- [ ] 발송/예약이 성공했는가?
 
 ---
 

@@ -106,7 +106,7 @@ def md_to_html(md_text, category="ai-trend"):
         cta_keywords = ("컨설팅", "문의", "상담", "진단")
         cta_actions = ("확인해보세요", "시작해보세요", "만나보세요", "알아보기", "시작할까요", "되셨나요", "있을까요")
         # case-study: "실행 포인트" / "교훈" 블록 감지
-        action_keywords = ("실행 포인트", "교훈")
+        action_keywords = ("교훈",)
         lines = text.split("\n")
         result = []
         in_quote = False
@@ -283,6 +283,26 @@ CATEGORY_LABELS = {
     "case-study": "Case Study",
     "company-news": "Company News",
 }
+
+CATEGORY_ALIASES = {
+    "AI Trend": "ai-trend",
+    "Thought Leadership": "thought-leadership",
+    "Case Study": "case-study",
+    "Company News": "company-news",
+    "ai trend": "ai-trend",
+    "thought leadership": "thought-leadership",
+    "case study": "case-study",
+    "company news": "company-news",
+}
+
+
+def normalize_category(category):
+    if not category:
+        return "thought-leadership"
+    raw = str(category).strip()
+    if raw in CATEGORY_LABELS:
+        return raw
+    return CATEGORY_ALIASES.get(raw, CATEGORY_ALIASES.get(raw.lower(), raw))
 
 # 공통 베이스 CSS
 BASE_CSS = """
@@ -674,7 +694,7 @@ CATEGORY_CSS = {
 
 def build_blog_html(meta, body_html, headings, thumbnail_html=""):
     title = meta.get("title", "제목 없음")
-    category = meta.get("category", "ai-trend")
+    category = normalize_category(meta.get("category", "ai-trend"))
     cat_label = CATEGORY_LABELS.get(category, category)
     created = meta.get("created_at", "2026-03-25")
     meta_desc = meta.get("meta_description", "")
