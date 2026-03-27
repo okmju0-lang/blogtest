@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1600, initial-scale=1" />
+  <title>기업 AX 인포그래픽</title>
+  <style>
+    @font-face {
+      font-family: "Pretendard";
+      src: url("file:///C:/Users/MagicecoleGuest/Desktop/%EA%B9%80%EC%A7%84%EC%88%98/%EB%B8%94%EB%A1%9C%EA%B7%B8%20%EC%9E%91%EC%84%B1/assets/fonts/Pretendard-Regular.otf") format("opentype");
+      font-weight: 400;
+    }
+    @font-face {
+      font-family: "Pretendard";
+      src: url("file:///C:/Users/MagicecoleGuest/Desktop/%EA%B9%80%EC%A7%84%EC%88%98/%EB%B8%94%EB%A1%9C%EA%B7%B8%20%EC%9E%91%EC%84%B1/assets/fonts/Pretendard-Bold.otf") format("opentype");
+      font-weight: 700;
+    }
+    @font-face {
+      font-family: "Pretendard";
+      src: url("file:///C:/Users/MagicecoleGuest/Desktop/%EA%B9%80%EC%A7%84%EC%88%98/%EB%B8%94%EB%A1%9C%EA%B7%B8%20%EC%9E%91%EC%84%B1/assets/fonts/Pretendard-Black.otf") format("opentype");
+      font-weight: 900;
+    }
+
+    :root {
+      --ink: #142a45;
+      --muted: #667b94;
+      --blue: #3da4ff;
+      --gold: #efbf58;
+      --rose: #ea8a80;
+      --panel: rgba(255, 255, 255, 0.82);
+      --panel-strong: rgba(255, 255, 255, 0.92);
+      --line: rgba(20, 42, 69, 0.08);
+      --shadow: 0 26px 56px rgba(28, 57, 95, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 1600px;
+      height: 1200px;
+      margin: 0;
+      overflow: hidden;
+      font-family: "Pretendard", "Malgun Gothic", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 10%, rgba(61, 164, 255, 0.20), transparent 24%),
+        radial-gradient(circle at 88% 14%, rgba(239, 191, 88, 0.20), transparent 24%),
+        linear-gradient(180deg, #f8fbff, #eef4fb);
+    }
+
+    body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px);
+      background-size: 126px 126px;
+      opacity: 0.55;
+      mask-image: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.08));
+      pointer-events: none;
+    }
+
+    .frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      padding: 72px 82px 68px;
+      display: grid;
+      grid-template-rows: auto auto auto 1fr auto;
+      gap: 28px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      width: fit-content;
+      padding: 12px 18px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.74);
+      border: 1px solid rgba(20, 42, 69, 0.08);
+      box-shadow: 0 10px 22px rgba(28, 57, 95, 0.08);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #57b6ff, #2b79da);
+    }
+
+    .hero {
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+
+    .topline {
+      font-size: 34px;
+      color: var(--muted);
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+    }
+
+    .title {
+      font-size: 104px;
+      line-height: 0.95;
+      letter-spacing: -0.07em;
+      font-weight: 900;
+      max-width: 980px;
+    }
+
+    .title .accent {
+      position: relative;
+      z-index: 1;
+    }
+
+    .title .accent::after {
+      content: "";
+      position: absolute;
+      left: 6px;
+      right: 6px;
+      bottom: 10px;
+      height: 20px;
+      border-radius: 999px;
+      background: rgba(239, 191, 88, 0.34);
+      z-index: -1;
+    }
+
+    .subcopy {
+      max-width: 760px;
+      font-size: 30px;
+      line-height: 1.46;
+      color: var(--muted);
+      letter-spacing: -0.02em;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .stat {
+      display: grid;
+      gap: 8px;
+      padding: 22px 24px 20px;
+      min-height: 148px;
+      border-radius: 28px;
+      background: var(--panel);
+      border: 1px solid rgba(20, 42, 69, 0.08);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .stat-number {
+      font-size: 62px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: -0.055em;
+    }
+
+    .stat-label {
+      font-size: 24px;
+      line-height: 1.25;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .stat-note {
+      font-size: 17px;
+      line-height: 1.4;
+      color: var(--muted);
+      letter-spacing: -0.01em;
+    }
+
+    .flow-card {
+      padding: 26px;
+      border-radius: 34px;
+      background: var(--panel-strong);
+      border: 1px solid rgba(20, 42, 69, 0.08);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      display: grid;
+      gap: 20px;
+    }
+
+    .section-label {
+      font-size: 18px;
+      font-weight: 800;
+      color: #2c67a4;
+      letter-spacing: 0.01em;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .step {
+      padding: 20px 20px 18px;
+      border-radius: 24px;
+      background: linear-gradient(180deg, #ffffff, #f8fbff);
+      border: 1px solid rgba(20, 42, 69, 0.07);
+      min-height: 250px;
+    }
+
+    .step-index {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: rgba(61, 164, 255, 0.12);
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 18px;
+    }
+
+    .step.warn .step-index {
+      background: rgba(234, 138, 128, 0.16);
+    }
+
+    .step.gold .step-index {
+      background: rgba(239, 191, 88, 0.18);
+    }
+
+    .step-title {
+      font-size: 30px;
+      line-height: 1.18;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin-bottom: 12px;
+    }
+
+    .step-copy {
+      font-size: 20px;
+      line-height: 1.5;
+      color: var(--muted);
+      letter-spacing: -0.015em;
+    }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 22px 26px;
+      border-radius: 30px;
+      background: rgba(255, 255, 255, 0.74);
+      border: 1px solid rgba(20, 42, 69, 0.08);
+      box-shadow: 0 18px 36px rgba(28, 57, 95, 0.08);
+      backdrop-filter: blur(12px);
+    }
+
+    .footer-title {
+      font-size: 28px;
+      line-height: 1.24;
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      color: var(--ink);
+    }
+
+    .pills {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pill {
+      padding: 12px 16px;
+      border-radius: 999px;
+      background: rgba(20, 42, 69, 0.06);
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <main class="frame">
+    <div class="badge">
+      <span class="dot"></span>
+      <span>AX 핵심 인사이트</span>
+    </div>
+
+    <section class="hero">
+      <div class="topline">기업 AX 최대 리스크는</div>
+      <div class="title"><span class="accent">거버넌스 없는</span><br />AI 확산</div>
+      <div class="subcopy">
+        현장 사용 속도는 빠른데 통제와 기준이 비어 있으면
+        생산성보다 리스크가 먼저 커집니다.
+      </div>
+    </section>
+
+    <section class="stats">
+      <article class="stat">
+        <div class="stat-number">75%</div>
+        <div class="stat-label">이미 업무에 AI 사용</div>
+        <div class="stat-note">현장은 이미 확산 단계입니다.</div>
+      </article>
+      <article class="stat">
+        <div class="stat-number">78%</div>
+        <div class="stat-label">개인 도구를 업무에 사용</div>
+        <div class="stat-note">BYOAI가 빠르게 늘고 있습니다.</div>
+      </article>
+      <article class="stat">
+        <div class="stat-number">60%</div>
+        <div class="stat-label">리더, AI 계획 부족 체감</div>
+        <div class="stat-note">현장 속도와 경영 계획이 어긋납니다.</div>
+      </article>
+    </section>
+
+    <section class="flow-card">
+      <div class="section-label">위험이 커지는 흐름</div>
+      <div class="flow">
+        <article class="step">
+          <div class="step-index">01</div>
+          <div class="step-title">빠른 AI 확산</div>
+          <div class="step-copy">
+            보고서, 검색, 요약 같은 업무에
+            AI 사용이 먼저 퍼집니다.
+          </div>
+        </article>
+        <article class="step warn">
+          <div class="step-index">02</div>
+          <div class="step-title">통제 공백</div>
+          <div class="step-copy">
+            승인 기준, 데이터 원칙,
+            책임 구조가 비어 있습니다.
+          </div>
+        </article>
+        <article class="step gold">
+          <div class="step-index">03</div>
+          <div class="step-title">운영 리스크 확대</div>
+          <div class="step-copy">
+            보안, 성과 측정, 통합,
+            책임소재 이슈가 커집니다.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="footer">
+      <div class="footer-title">먼저 정렬할 것만 남기면 됩니다.</div>
+      <div class="pills">
+        <span class="pill">승인 기준</span>
+        <span class="pill">데이터 원칙</span>
+        <span class="pill">측정 체계</span>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

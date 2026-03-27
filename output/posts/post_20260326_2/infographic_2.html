@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1600, initial-scale=1" />
+  <title>AX Operating Design Infographic</title>
+  <style>
+    @font-face {
+      font-family: "Pretendard";
+      src: url("file:///C:/Users/MagicecoleGuest/Desktop/%EA%B9%80%EC%A7%84%EC%88%98/%EB%B8%94%EB%A1%9C%EA%B7%B8%20%EC%9E%91%EC%84%B1/assets/fonts/Pretendard-Regular.otf") format("opentype");
+      font-weight: 400;
+    }
+    @font-face {
+      font-family: "Pretendard";
+      src: url("file:///C:/Users/MagicecoleGuest/Desktop/%EA%B9%80%EC%A7%84%EC%88%98/%EB%B8%94%EB%A1%9C%EA%B7%B8%20%EC%9E%91%EC%84%B1/assets/fonts/Pretendard-SemiBold.otf") format("opentype");
+      font-weight: 600;
+    }
+    @font-face {
+      font-family: "Pretendard";
+      src: url("file:///C:/Users/MagicecoleGuest/Desktop/%EA%B9%80%EC%A7%84%EC%88%98/%EB%B8%94%EB%A1%9C%EA%B7%B8%20%EC%9E%91%EC%84%B1/assets/fonts/Pretendard-Bold.otf") format("opentype");
+      font-weight: 700;
+    }
+    @font-face {
+      font-family: "Pretendard";
+      src: url("file:///C:/Users/MagicecoleGuest/Desktop/%EA%B9%80%EC%A7%84%EC%88%98/%EB%B8%94%EB%A1%9C%EA%B7%B8%20%EC%9E%91%EC%84%B1/assets/fonts/Pretendard-Black.otf") format("opentype");
+      font-weight: 900;
+    }
+
+    :root {
+      --ink: #16324a;
+      --muted: #667b8f;
+      --panel: rgba(255, 255, 255, 0.86);
+      --line: rgba(22, 50, 74, 0.08);
+      --shadow: 0 24px 48px rgba(32, 67, 108, 0.12);
+      --sky: #58b7ff;
+      --sand: #f0c76a;
+      --mint: #8ad2c1;
+      --rose: #ea9e94;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 1600px;
+      height: 1200px;
+      margin: 0;
+      overflow: hidden;
+      font-family: "Pretendard", "Malgun Gothic", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 12%, rgba(88, 183, 255, 0.18), transparent 24%),
+        radial-gradient(circle at 86% 14%, rgba(240, 199, 106, 0.18), transparent 22%),
+        radial-gradient(circle at 76% 88%, rgba(138, 210, 193, 0.12), transparent 20%),
+        linear-gradient(180deg, #f8fbff 0%, #eef4fa 100%);
+    }
+
+    body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px);
+      background-size: 132px 132px;
+      opacity: 0.45;
+      mask-image: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0.08));
+      pointer-events: none;
+    }
+
+    .frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      padding: 84px 88px 76px;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 28px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      width: fit-content;
+      padding: 14px 20px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(22, 50, 74, 0.08);
+      box-shadow: 0 10px 20px rgba(32, 67, 108, 0.08);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .badge-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #6ec3ff, #2f7fdb);
+    }
+
+    .hero {
+      display: grid;
+      gap: 14px;
+      max-width: 940px;
+    }
+
+    .eyebrow {
+      font-size: 28px;
+      color: var(--muted);
+      letter-spacing: -0.03em;
+    }
+
+    .title {
+      font-size: 94px;
+      line-height: 0.98;
+      letter-spacing: -0.065em;
+      font-weight: 900;
+      margin: 0;
+    }
+
+    .subtitle {
+      font-size: 30px;
+      line-height: 1.45;
+      color: var(--muted);
+      letter-spacing: -0.02em;
+      max-width: 880px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 22px;
+      align-content: start;
+      padding-top: 8px;
+    }
+
+    .card {
+      min-height: 282px;
+      padding: 28px 28px 26px;
+      border-radius: 30px;
+      background: var(--panel);
+      border: 1px solid rgba(22, 50, 74, 0.08);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      display: grid;
+      gap: 18px;
+    }
+
+    .card-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: #1b4f7e;
+      background: rgba(88, 183, 255, 0.14);
+    }
+
+    .card:nth-child(2) .card-label {
+      background: rgba(240, 199, 106, 0.20);
+      color: #7b5a08;
+    }
+
+    .card:nth-child(3) .card-label {
+      background: rgba(138, 210, 193, 0.24);
+      color: #165f55;
+    }
+
+    .card:nth-child(4) .card-label {
+      background: rgba(234, 158, 148, 0.20);
+      color: #8a433d;
+    }
+
+    .card-title {
+      font-size: 44px;
+      line-height: 1.02;
+      letter-spacing: -0.05em;
+      font-weight: 900;
+      margin: 0;
+    }
+
+    .card-copy {
+      font-size: 24px;
+      line-height: 1.45;
+      letter-spacing: -0.02em;
+      color: var(--muted);
+      max-width: 88%;
+    }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 22px 26px;
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid rgba(22, 50, 74, 0.08);
+      box-shadow: 0 18px 36px rgba(32, 67, 108, 0.08);
+    }
+
+    .footer-copy {
+      font-size: 24px;
+      line-height: 1.4;
+      letter-spacing: -0.02em;
+      color: var(--muted);
+    }
+
+    .footer-copy strong {
+      color: var(--ink);
+    }
+
+    .footer-tag {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: #245d95;
+    }
+  </style>
+</head>
+<body>
+  <main class="frame">
+    <div class="badge">
+      <span class="badge-dot"></span>
+      AX Operating Design
+    </div>
+
+    <section class="hero">
+      <div class="eyebrow">AI를 더 들이기 전에</div>
+      <h1 class="title">먼저 정렬할 네 가지</h1>
+      <div class="subtitle">AX는 툴 수보다 운영 설계가 먼저입니다. 누가 승인하고, 어떤 데이터로 쓰며, 무엇을 측정할지부터 맞춰야 합니다.</div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <div class="card-label">GOVERN</div>
+        <h2 class="card-title">누가 결정하나</h2>
+        <div class="card-copy">사용 허용 범위, 승인 주체, 예외 처리 기준을 먼저 정합니다.</div>
+      </article>
+
+      <article class="card">
+        <div class="card-label">MAP</div>
+        <h2 class="card-title">어디에 쓰나</h2>
+        <div class="card-copy">AI가 들어가는 업무와 연결 데이터 흐름을 한 장으로 그립니다.</div>
+      </article>
+
+      <article class="card">
+        <div class="card-label">MEASURE</div>
+        <h2 class="card-title">무엇을 보나</h2>
+        <div class="card-copy">속도만이 아니라 정확도, 검토 부담, 위험 신호를 함께 측정합니다.</div>
+      </article>
+
+      <article class="card">
+        <div class="card-label">MANAGE</div>
+        <h2 class="card-title">어떻게 유지하나</h2>
+        <div class="card-copy">교육, 로그 점검, 가이드 업데이트가 반복돼야 확산이 안정됩니다.</div>
+      </article>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-copy"><strong>좋은 AX</strong>는 더 많은 도구가 아니라 더 선명한 운영 질문에서 시작됩니다.</div>
+      <div class="footer-tag">Govern / Map / Measure / Manage</div>
+    </footer>
+  </main>
+</body>
+</html>

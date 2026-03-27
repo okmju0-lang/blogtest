@@ -19,7 +19,9 @@
       "WebSearch",
       "WebFetch(domain:docs.outcode.biz)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git:*)",
+      "Bash(start:*)"
     ]
   }
 }
