@@ -1,0 +1,17 @@
+flowchart TB
+    A["사내 문서<br/>보고서·매뉴얼·회의록"] --> B["엔티티 추출<br/>사람·조직·개념"]
+    B --> C["관계 연결<br/>지식 그래프 구축"]
+    C --> D["커뮤니티 탐지<br/>연관 주제 묶기"]
+    D --> E["커뮤니티 요약 생성"]
+    E --> F["질문과 연결할 맥락 준비"]
+    Q["사용자 질문"] --> G["관련 커뮤니티 선택"]
+    F --> G
+    G --> H["부분 답변 생성"]
+    H --> I["최종 답변 합성"]
+
+    classDef source fill:#eef4ff,stroke:#4361EE,stroke-width:2px,color:#163261;
+    classDef process fill:#f7fbff,stroke:#4CC9F0,stroke-width:2px,color:#0f3d4d;
+    classDef output fill:#eefaf4,stroke:#2c9a6a,stroke-width:2px,color:#12432e;
+    class A,Q source;
+    class B,C,D,E,F,G,H process;
+    class I output;

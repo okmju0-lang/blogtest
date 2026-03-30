@@ -17,6 +17,7 @@ import re
 import argparse
 import base64
 import mimetypes
+from datetime import datetime
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
@@ -60,13 +61,26 @@ def parse_post_md(file_path):
 def extract_headings(body):
     headings = []
     for line in body.splitlines():
-        m = re.match(r"^## (.+)$", line)
+        m = re.match(r"^(##|###) (.+)$", line)
         if m:
-            title = m.group(1).strip()
+            level = 2 if m.group(1) == "##" else 3
+            title = m.group(2).strip()
             anchor = re.sub(r"[^\w가-힣\s-]", "", title)
             anchor = re.sub(r"\s+", "-", anchor).strip("-").lower()
-            headings.append({"title": title, "anchor": anchor})
+            headings.append({"title": title, "anchor": anchor, "level": level})
     return headings
+
+
+def summarize_heading_for_toc(title):
+    short_title = title.strip()
+    for sep in (" — ", " - ", ": ", "： "):
+        if sep in short_title:
+            short_title = short_title.split(sep, 1)[0].strip()
+            break
+    question_idx = short_title.find("?")
+    if question_idx != -1 and question_idx < len(short_title) - 1:
+        short_title = short_title[: question_idx + 1].strip()
+    return short_title
 
 
 def md_to_html(md_text, category="ai-trend"):
@@ -103,9 +117,6 @@ def md_to_html(md_text, category="ai-trend"):
 
     # 인용 블록 — 카테고리별 CSS 클래스 분기
     def convert_blockquotes(text):
-        cta_keywords = ("컨설팅", "문의", "상담", "진단")
-        cta_actions = ("확인해보세요", "시작해보세요", "만나보세요", "알아보기", "시작할까요", "되셨나요", "있을까요")
-        # case-study: "실행 포인트" / "교훈" 블록 감지
         action_keywords = ("교훈",)
         lines = text.split("\n")
         result = []
@@ -121,11 +132,8 @@ def md_to_html(md_text, category="ai-trend"):
                 if in_quote:
                     content = "<br>".join(quote_lines)
                     joined = " ".join(quote_lines)
-                    is_cta = any(k in joined for k in cta_keywords) and any(a in joined for a in cta_actions)
                     is_action = any(k in joined for k in action_keywords)
-                    if is_cta:
-                        result.append(f'<div class="cta-block">{content}</div>')
-                    elif is_action:
+                    if is_action:
                         result.append(f'<blockquote class="action-point">{content}</blockquote>')
                     else:
                         result.append(f"<blockquote>{content}</blockquote>")
@@ -135,17 +143,44 @@ def md_to_html(md_text, category="ai-trend"):
         if in_quote:
             content = "<br>".join(quote_lines)
             joined = " ".join(quote_lines)
-            is_cta = any(k in joined for k in cta_keywords) and any(a in joined for a in cta_actions)
             is_action = any(k in joined for k in action_keywords)
-            if is_cta:
-                result.append(f'<div class="cta-block">{content}</div>')
-            elif is_action:
+            if is_action:
                 result.append(f'<blockquote class="action-point">{content}</blockquote>')
             else:
                 result.append(f"<blockquote>{content}</blockquote>")
         return "\n".join(result)
 
     html = convert_blockquotes(html)
+
+    def convert_cta_blocks(text):
+        def replace_cta(match):
+            inner = match.group(1)
+            if "<a " not in inner:
+                return match.group(0)
+
+            parts = [part.strip() for part in inner.split("<br>") if part.strip()]
+            title_html = ""
+            copy_lines = []
+            link_lines = []
+            for part in parts:
+                if "<a " in part:
+                    link_lines.append(part)
+                elif not title_html:
+                    title_html = part if "<strong>" in part else f"<strong>{part}</strong>"
+                else:
+                    copy_lines.append(part)
+
+            if not title_html or not link_lines:
+                return match.group(0)
+
+            cta_parts = [title_html]
+            cta_parts.extend(f'<p class="cta-copy">{line}</p>' for line in copy_lines)
+            cta_parts.extend(link_lines)
+            return f'<div class="cta-block">{"".join(cta_parts)}</div>'
+
+        return re.sub(r"<blockquote>(.*?)</blockquote>", replace_cta, text, flags=re.DOTALL)
+
+    html = convert_cta_blocks(html)
 
     # 테이블
     def convert_tables(text):
@@ -238,24 +273,7 @@ def md_to_html(md_text, category="ai-trend"):
     flush_paragraph()
     html = "\n".join(wrapped)
 
-    def add_structural_dividers(text):
-        h2_count = 0
-
-        def maybe_add_before_h2(match):
-            nonlocal h2_count
-            full = match.group(0)
-            title = match.group(2).strip()
-            should_divide = h2_count > 0
-            h2_count += 1
-            if should_divide:
-                return '<hr class="section-break" />\n' + full
-            return full
-
-        text = re.sub(r'(<h2 id="[^"]+">([^<]+)</h2>)', lambda m: maybe_add_before_h2(m), text)
-        text = re.sub(r'(?<!section-break" />\n)(<p><strong>참고 자료</strong></p>)', r'<hr class="section-break" />' + "\n" + r'\1', text)
-        return text
-
-    return add_structural_dividers(html)
+    return html
 
 
 def embed_local_images(html, post_dir):
@@ -303,6 +321,87 @@ def normalize_category(category):
     if raw in CATEGORY_LABELS:
         return raw
     return CATEGORY_ALIASES.get(raw, CATEGORY_ALIASES.get(raw.lower(), raw))
+
+
+CURRENT_SITE_THEMES = {
+    "ai-trend": {
+        "accent": "#7c3aed",
+        "chip_bg": "#ede9fe",
+        "chip_text": "#6d28d9",
+        "avatar_start": "#7c3aed",
+        "avatar_end": "#a78bfa",
+        "blockquote_border": "#8b5cf6",
+        "blockquote_bg": "#f5f3ff",
+        "cta_start": "#1e1b4b",
+        "cta_end": "#7c3aed",
+        "cta_copy": "#ddd6fe",
+        "button_text": "#4c1d95",
+        "shadow_rgb": "124, 58, 237",
+    },
+    "thought-leadership": {
+        "accent": "#2563eb",
+        "chip_bg": "#dbeafe",
+        "chip_text": "#1d4ed8",
+        "avatar_start": "#1e40af",
+        "avatar_end": "#60a5fa",
+        "blockquote_border": "#60a5fa",
+        "blockquote_bg": "#eff6ff",
+        "cta_start": "#1e3a5f",
+        "cta_end": "#2563eb",
+        "cta_copy": "#dbeafe",
+        "button_text": "#1e3a5f",
+        "shadow_rgb": "37, 99, 235",
+    },
+    "case-study": {
+        "accent": "#059669",
+        "chip_bg": "#d1fae5",
+        "chip_text": "#047857",
+        "avatar_start": "#059669",
+        "avatar_end": "#34d399",
+        "blockquote_border": "#34d399",
+        "blockquote_bg": "#ecfdf5",
+        "cta_start": "#064e3b",
+        "cta_end": "#059669",
+        "cta_copy": "#d1fae5",
+        "button_text": "#064e3b",
+        "shadow_rgb": "5, 150, 105",
+    },
+    "company-news": {
+        "accent": "#ea580c",
+        "chip_bg": "#ffedd5",
+        "chip_text": "#c2410c",
+        "avatar_start": "#ea580c",
+        "avatar_end": "#fb923c",
+        "blockquote_border": "#fb923c",
+        "blockquote_bg": "#fff7ed",
+        "cta_start": "#7c2d12",
+        "cta_end": "#ea580c",
+        "cta_copy": "#fed7aa",
+        "button_text": "#7c2d12",
+        "shadow_rgb": "234, 88, 12",
+    },
+}
+
+
+def build_site_css(category):
+    theme = CURRENT_SITE_THEMES.get(normalize_category(category), CURRENT_SITE_THEMES["thought-leadership"])
+    theme_vars = f"""
+  :root {{
+    --theme-accent: {theme["accent"]};
+    --theme-chip-bg: {theme["chip_bg"]};
+    --theme-chip-text: {theme["chip_text"]};
+    --theme-avatar-start: {theme["avatar_start"]};
+    --theme-avatar-end: {theme["avatar_end"]};
+    --theme-blockquote-border: {theme["blockquote_border"]};
+    --theme-blockquote-bg: {theme["blockquote_bg"]};
+    --theme-cta-start: {theme["cta_start"]};
+    --theme-cta-end: {theme["cta_end"]};
+    --theme-cta-copy: {theme["cta_copy"]};
+    --theme-button-text: {theme["button_text"]};
+    --theme-shadow-rgb: {theme["shadow_rgb"]};
+  }}
+"""
+    return theme_vars + SITE_CSS
 
 # 공통 베이스 CSS
 BASE_CSS = """
@@ -692,17 +791,393 @@ CATEGORY_CSS = {
 }
 
 
-def build_blog_html(meta, body_html, headings, thumbnail_html=""):
+SITE_CSS = """
+  @import url('https://rsms.me/inter/inter.css');
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: Inter, 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #ffffff;
+    color: #111827;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  a { color: inherit; text-decoration: none; }
+  .page { min-height: 100vh; background: #fff; }
+  .site-header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .header-inner {
+    max-width: 1152px; margin: 0 auto; padding: 0 24px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 20px; }
+  .logo-link img { height: 28px; width: auto; display: block; }
+  .divider { color: #e5e7eb; display: none; }
+  .nav-links { display: none; align-items: center; gap: 20px; }
+  .nav-links a {
+    font-size: 14px; color: #6b7280; transition: color 0.2s ease;
+  }
+  .nav-links a:hover { color: #111827; }
+  .header-cta {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #0f172a; color: #fff; padding: 10px 16px;
+    border-radius: 12px; font-size: 14px; font-weight: 600;
+    transition: background 0.2s ease;
+  }
+  .header-cta:hover { background: #334155; }
+  .main-shell { padding-top: 80px; }
+  .post-head {
+    max-width: 896px; margin: 0 auto; padding: 0 24px 32px;
+  }
+  .chip-row {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .category-chip {
+    background: var(--theme-chip-bg); color: var(--theme-chip-text);
+    font-size: 12px; font-weight: 700;
+    padding: 6px 12px; border-radius: 9999px;
+  }
+  .tag-chip {
+    font-size: 12px; color: #9ca3af; background: #f3f4f6;
+    padding: 5px 10px; border-radius: 9999px;
+  }
+  .post-title {
+    font-size: 36px; line-height: 1.2; letter-spacing: -0.03em;
+    font-weight: 800; color: #111827; margin-bottom: 20px;
+  }
+  .post-subtitle {
+    font-size: 18px; line-height: 1.75; color: #6b7280; margin-bottom: 24px;
+  }
+  .post-meta {
+    display: flex; align-items: center; gap: 12px;
+    color: #9ca3af; font-size: 14px; padding-bottom: 32px;
+    border-bottom: 1px solid #f3f4f6;
+    flex-wrap: wrap;
+  }
+  .author-avatar {
+    width: 32px; height: 32px; border-radius: 9999px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--theme-avatar-start), var(--theme-avatar-end)); color: #fff; font-size: 12px; font-weight: 700;
+  }
+  .author-name { color: #374151; font-weight: 600; }
+  .hero-shell, .content-shell, .casebook-shell { max-width: 896px; margin: 0 auto; padding: 0 24px; }
+  .hero-shell { margin-bottom: 40px; }
+  .hero-media {
+    border-radius: 24px; overflow: hidden; aspect-ratio: 16 / 7; background: #111827;
+  }
+  .hero-media img, .hero-media .thumbnail { width: 100%; height: 100%; object-fit: cover; display: block; margin: 0; border-radius: 0; box-shadow: none; }
+  .content-shell { padding-bottom: 80px; }
+  .contents-card {
+    margin-bottom: 36px; background: #f9fafb; border: 1px solid #e5e7eb;
+    border-radius: 24px; padding: 22px 24px;
+  }
+  .contents-title {
+    font-size: 11px; font-weight: 800; color: #9ca3af;
+    letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 14px;
+  }
+  .contents-nav { display: flex; flex-direction: column; gap: 2px; }
+  .contents-link {
+    font-size: 15px; line-height: 1.5; color: #6b7280; padding: 6px 0; transition: color 0.2s ease;
+  }
+  .contents-link:hover, .contents-link.active { color: var(--theme-accent); font-weight: 600; }
+  .blog-prose { max-width: none; }
+  .blog-prose h2 {
+    font-size: 30px; line-height: 1.25; font-weight: 800; color: #111827;
+    margin-top: 56px; margin-bottom: 20px; letter-spacing: -0.02em;
+  }
+  .blog-prose h3 {
+    font-size: 22px; line-height: 1.35; font-weight: 700; color: #1f2937;
+    margin-top: 36px; margin-bottom: 16px;
+  }
+  .blog-prose h4 {
+    font-size: 18px; line-height: 1.45; font-weight: 700; color: #374151;
+    margin-top: 28px; margin-bottom: 12px;
+  }
+  .blog-prose p, .blog-prose li {
+    font-size: 17px; line-height: 1.85; color: #374151;
+  }
+  .blog-prose p { margin-bottom: 20px; }
+  .blog-prose ul, .blog-prose ol { margin: 20px 0 28px; padding-left: 24px; }
+  .blog-prose li { margin-bottom: 10px; }
+  .blog-prose strong { color: #111827; }
+  .blog-prose em { font-style: italic; }
+  .blog-prose a { color: var(--theme-accent); }
+  .blog-prose a:hover { text-decoration: underline; }
+  .blog-prose hr { border: none; border-top: 1px solid #e5e7eb; margin: 40px 0; }
+  .blog-prose blockquote {
+    border-left: 4px solid var(--theme-blockquote-border);
+    background: var(--theme-blockquote-bg);
+    border-radius: 0 16px 16px 0;
+    padding: 24px 28px;
+    margin: 32px 0;
+  }
+  .blog-prose blockquote p:last-child { margin-bottom: 0; }
+  .blog-prose .cta-block {
+    background: linear-gradient(135deg, var(--theme-cta-start) 0%, var(--theme-cta-end) 100%);
+    color: #fff; border-radius: 24px; padding: 56px 28px 60px; margin: 48px 0 32px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px;
+    text-align: center; box-shadow: 0 24px 48px rgba(var(--theme-shadow-rgb), 0.18);
+  }
+  .blog-prose .cta-block strong {
+    color: #fff; display: block; font-size: 22px; line-height: 1.35; letter-spacing: -0.02em;
+  }
+  .blog-prose .cta-block .cta-copy {
+    margin: -8px 0 0; max-width: 560px; color: var(--theme-cta-copy); font-size: 16px;
+  }
+  .blog-prose .cta-block a {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 280px;
+    background: #fff; color: var(--theme-button-text); padding: 20px 32px; border-radius: 16px; font-weight: 800;
+    font-size: 16px; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16); transition: transform 0.2s ease;
+  }
+  .blog-prose .cta-block a:hover { text-decoration: none; transform: translateY(-1px); }
+  .blog-prose code {
+    background: #eef2ff; color: #4338ca; border-radius: 8px;
+    padding: 2px 7px; font-size: 14px;
+  }
+  .blog-prose pre {
+    background: #111827; color: #f9fafb; border-radius: 20px;
+    padding: 24px; overflow-x: auto; margin: 28px 0;
+  }
+  .blog-prose pre code { background: transparent; color: inherit; padding: 0; }
+  .blog-prose .post-image { margin: 36px 0; }
+  .blog-prose .post-image img {
+    width: 100%; border-radius: 24px; box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+    display: block;
+  }
+  .blog-prose .post-image figcaption {
+    text-align: center; font-size: 13px; color: #9ca3af; margin-top: 10px;
+  }
+  .blog-prose .table-wrap {
+    overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 20px; margin: 28px 0;
+  }
+  .blog-prose table { width: 100%; border-collapse: collapse; min-width: 640px; }
+  .blog-prose th {
+    text-align: left; font-size: 14px; font-weight: 700; color: #111827;
+    padding: 16px 18px; background: #f8fafc; border-bottom: 1px solid #e5e7eb;
+  }
+  .blog-prose td {
+    font-size: 15px; line-height: 1.7; color: #374151;
+    padding: 16px 18px; border-bottom: 1px solid #eef2f7; vertical-align: top;
+  }
+  .blog-prose tbody tr:last-child td { border-bottom: none; }
+  .related-shell {
+    margin-top: 64px; padding-top: 40px; border-top: 1px solid #f3f4f6;
+  }
+  .related-title {
+    font-size: 11px; font-weight: 800; color: #9ca3af;
+    letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 20px;
+  }
+  .related-grid {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;
+  }
+  .related-card { display: block; }
+  .related-thumb {
+    border-radius: 16px; overflow: hidden; background: #f3f4f6;
+    aspect-ratio: 16 / 9; margin-bottom: 10px;
+  }
+  .related-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .related-fallback {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    font-size: 28px; opacity: 0.2;
+  }
+  .related-card p {
+    font-size: 14px; line-height: 1.45; font-weight: 700; color: #374151;
+    transition: color 0.2s ease;
+  }
+  .related-card:hover p { color: var(--theme-accent); }
+  .casebook-shell { padding-bottom: 40px; }
+  .casebook-card {
+    cursor: pointer; border-radius: 24px; padding: 32px;
+    display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 24px;
+    background: linear-gradient(135deg, var(--theme-cta-start), var(--theme-cta-end));
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .casebook-card:hover { transform: translateY(-2px); box-shadow: 0 18px 40px rgba(var(--theme-shadow-rgb), 0.18); }
+  .casebook-eyebrow { color: var(--theme-cta-copy); font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .casebook-card h3 { color: #fff; font-size: 24px; font-weight: 800; margin-bottom: 10px; }
+  .casebook-card p { color: var(--theme-cta-copy); font-size: 14px; line-height: 1.7; }
+  .casebook-button {
+    flex-shrink: 0; background: #fff; color: var(--theme-button-text); font-weight: 800;
+    padding: 14px 24px; border-radius: 16px; font-size: 14px; white-space: nowrap;
+  }
+  .bottom-cta {
+    background: linear-gradient(135deg, var(--theme-cta-start), var(--theme-cta-end)); margin-top: 8px;
+  }
+  .bottom-cta-inner {
+    max-width: 1152px; margin: 0 auto; padding: 64px 24px; text-align: center;
+  }
+  .bottom-cta h2 { color: #fff; font-size: 30px; font-weight: 800; margin-bottom: 14px; }
+  .bottom-cta p { color: var(--theme-cta-copy); margin-bottom: 28px; font-size: 16px; }
+  .bottom-cta a {
+    display: inline-flex; align-items: center; gap: 8px; background: #fff; color: var(--theme-button-text);
+    padding: 16px 28px; border-radius: 9999px; font-weight: 800;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
+  }
+  .site-footer {
+    background: #fff; color: #6b7280; border-top: 1px solid #e5e7eb;
+  }
+  .footer-inner { max-width: 1152px; margin: 0 auto; padding: 40px 24px 32px; }
+  .footer-top {
+    display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between;
+    gap: 24px; padding-bottom: 32px; border-bottom: 1px solid #e5e7eb;
+  }
+  .footer-nav { display: flex; flex-wrap: wrap; gap: 18px; font-size: 14px; }
+  .footer-nav a:hover { color: var(--theme-accent); }
+  .footer-body { padding: 24px 0; border-bottom: 1px solid #e5e7eb; }
+  .footer-body p { font-size: 14px; color: #374151; font-weight: 700; margin-bottom: 12px; }
+  .footer-row {
+    display: flex; flex-wrap: wrap; gap: 12px 24px; font-size: 12px; line-height: 1.7;
+    color: #6b7280; margin-bottom: 6px;
+  }
+  .footer-bottom {
+    padding-top: 24px; display: flex; flex-direction: column; align-items: flex-start;
+    gap: 12px; font-size: 12px; color: #9ca3af;
+  }
+  @media (min-width: 640px) {
+    .divider, .nav-links { display: flex; }
+    .footer-top { flex-direction: row; align-items: center; }
+    .footer-bottom { flex-direction: row; align-items: center; justify-content: space-between; }
+  }
+  @media (max-width: 767px) {
+    .post-title { font-size: 30px; }
+    .post-subtitle { font-size: 17px; }
+    .blog-prose h2 { font-size: 26px; }
+    .blog-prose h3 { font-size: 20px; }
+    .blog-prose .cta-block { padding: 40px 20px 44px; gap: 22px; border-radius: 20px; }
+    .blog-prose .cta-block strong { font-size: 20px; }
+    .blog-prose .cta-block a { width: 100%; min-width: 0; padding: 18px 20px; }
+    .related-grid { grid-template-columns: 1fr; }
+    .casebook-card { flex-direction: column; align-items: flex-start; }
+    .header-cta { padding: 9px 12px; font-size: 13px; }
+  }
+"""
+
+
+def title_to_slug(title):
+    slug = re.sub(r"[^\w\s가-힣-]", "", title)
+    slug = re.sub(r"\s+", "-", slug.strip())
+    return slug.lower()
+
+
+def calculate_reading_time(body):
+    char_count = len(re.sub(r"\s+", "", body))
+    return max(1, round(char_count / 500))
+
+
+def format_created_date(created_at):
+    raw = (created_at or "").strip()
+    for fmt in ("%Y-%m-%d", "%Y-%m-%d %H:%M", "%Y-%m-%d %H:%M:%S"):
+        try:
+            dt = datetime.strptime(raw, fmt)
+            return f"{dt.year}년 {dt.month}월 {dt.day}일"
+        except ValueError:
+            continue
+    return raw or "날짜 미정"
+
+
+def get_target_keywords(meta):
+    keywords = meta.get("target_keywords", [])
+    if isinstance(keywords, list):
+        return keywords
+    if isinstance(keywords, str):
+        parts = [p.strip() for p in keywords.split(",")]
+        return [p for p in parts if p]
+    return []
+
+
+def file_to_data_uri(file_path):
+    if not file_path or not os.path.exists(file_path):
+        return ""
+    mime_type = mimetypes.guess_type(file_path)[0] or "image/png"
+    with open(file_path, "rb") as f:
+        encoded = base64.b64encode(f.read()).decode("ascii")
+    return f"data:{mime_type};base64,{encoded}"
+
+
+def load_related_posts(project_root, current_post_id, limit=3):
+    posts_dir = os.path.join(project_root, "output", "posts")
+    if not os.path.isdir(posts_dir):
+        return []
+
+    related = []
+    for entry in sorted(os.listdir(posts_dir), reverse=True):
+        post_dir = os.path.join(posts_dir, entry)
+        post_md = os.path.join(post_dir, "post.md")
+        if not os.path.isdir(post_dir) or not os.path.exists(post_md):
+            continue
+        meta, _ = parse_post_md(post_md)
+        if meta.get("post_id") == current_post_id:
+            continue
+        title = meta.get("title", "").strip('"').strip("'")
+        if not title:
+            continue
+        thumb_rel = meta.get("thumbnail", "")
+        thumb_path = os.path.join(post_dir, thumb_rel) if thumb_rel else ""
+        related.append({
+            "title": title,
+            "slug": title_to_slug(title),
+            "thumbnail_data_uri": file_to_data_uri(thumb_path),
+        })
+        if len(related) >= limit:
+            break
+    return related
+
+
+def build_blog_html(meta, body_html, headings, reading_time, related_posts, thumbnail_html=""):
     title = meta.get("title", "제목 없음")
     category = normalize_category(meta.get("category", "ai-trend"))
     cat_label = CATEGORY_LABELS.get(category, category)
-    created = meta.get("created_at", "2026-03-25")
+    created = format_created_date(meta.get("created_at", ""))
     meta_desc = meta.get("meta_description", "")
-    cat_css = CATEGORY_CSS.get(category, CSS_THOUGHT_LEADERSHIP)
+    subtitle = meta_desc or ""
+    author = meta.get("author", "매직에꼴").strip('"').strip("'") or "매직에꼴"
+    tags = get_target_keywords(meta)
 
-    toc_items = ""
-    for h in headings:
-        toc_items += f'<a href="#{h["anchor"]}" class="toc-item">{h["title"]}</a>\n'
+    tag_items = "".join(f'<span class="tag-chip">#{tag}</span>' for tag in tags)
+    primary_headings = [h for h in headings if h.get("level") == 2]
+    toc_items = "".join(
+        f'<a href="#{h["anchor"]}" class="contents-link">{summarize_heading_for_toc(h["title"])}</a>'
+        for h in primary_headings
+    )
+
+    related_html = ""
+    if related_posts:
+        cards = []
+        for post in related_posts:
+            thumb = (
+                f'<img src="{post["thumbnail_data_uri"]}" alt="{post["title"]}" />'
+                if post["thumbnail_data_uri"]
+                else '<div class="related-fallback">📄</div>'
+            )
+            cards.append(
+                f'''<a class="related-card" href="https://magicecole.vercel.app/blog/{post["slug"]}">
+  <div class="related-thumb">{thumb}</div>
+  <p>{post["title"]}</p>
+</a>'''
+            )
+        related_html = f'''
+<div class="related-shell">
+  <p class="related-title">이런 글은 어때요?</p>
+  <div class="related-grid">
+    {"".join(cards)}
+  </div>
+</div>'''
+
+    contents_html = ""
+    if toc_items:
+        contents_html = f'''
+<div class="contents-card">
+  <p class="contents-title">Contents</p>
+  <nav class="contents-nav">
+    {toc_items}
+  </nav>
+</div>'''
 
     return f"""<!DOCTYPE html>
 <html lang="ko">
@@ -712,69 +1187,132 @@ def build_blog_html(meta, body_html, headings, thumbnail_html=""):
 <meta name="description" content="{meta_desc}" />
 <title>{title} | 매직에꼴 AX 인사이트</title>
 <style>
-{BASE_CSS}
-{cat_css}
+{build_site_css(category)}
 </style>
 </head>
 <body>
+<div class="page">
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-left">
+        <a target="_blank" rel="noopener noreferrer" class="logo-link" href="https://magicecole.com/">
+          <img src="https://magicecole.vercel.app/logo.png" alt="매직에꼴" />
+        </a>
+        <span class="divider">|</span>
+        <nav class="nav-links">
+          <a href="https://magicecole.vercel.app/products">제품 소개</a>
+          <a href="https://magicecole.vercel.app/blog">블로그</a>
+          <a href="https://magicecole.vercel.app/ax-diagnosis">AI 활용 진단</a>
+          <a href="https://magicecole.vercel.app/inquiry">AX 문의</a>
+        </nav>
+      </div>
+      <a class="header-cta" href="https://magicecole.vercel.app/inquiry">AX 도입 상담받기</a>
+    </div>
+  </header>
 
-<header class="header">
-  <div class="header-left">
-    <a href="#" class="header-logo"><span>magic</span>ecole</a>
-    <span class="header-nav">AX 인사이트</span>
-  </div>
-  <a href="https://ax-inquiry-system.vercel.app/inquiry" class="header-cta">AX 교육 문의하기 &rarr;</a>
-</header>
-
-<div class="layout">
-  <nav class="toc">
-    <div class="toc-label">CONTENTS</div>
-    {toc_items}
-  </nav>
-
-  <main class="main-content">
-    <div class="hero-banner">
-      <span class="category-badge">{cat_label}</span>
+  <main class="main-shell">
+    <section class="post-head">
+      <div class="chip-row">
+        <span class="category-chip">{cat_label}</span>
+        {tag_items}
+      </div>
       <h1 class="post-title">{title}</h1>
+      {f'<p class="post-subtitle">{subtitle}</p>' if subtitle else ''}
       <div class="post-meta">
         <div class="author-avatar">M</div>
-        <div>
-          <span class="author-name">매직에꼴</span>
-          <span style="margin: 0 6px; opacity: 0.4;">|</span>
-          <span>{created}</span>
-        </div>
+        <span class="author-name">{author}</span>
+        <span>·</span>
+        <span>{created}</span>
+        <span>·</span>
+        <span>{reading_time}분 읽기</span>
       </div>
-    </div>
-    {thumbnail_html}
-    <article>
-      {body_html}
-    </article>
+    </section>
+
+    {f'<section class="hero-shell"><div class="hero-media">{thumbnail_html}</div></section>' if thumbnail_html else ''}
+
+    <section class="content-shell">
+      {contents_html}
+      <article class="blog-prose" id="article-content">
+        {body_html}
+      </article>
+      {related_html}
+    </section>
+
+    <section class="casebook-shell">
+      <div class="casebook-card">
+        <div>
+          <p class="casebook-eyebrow">무료 자료</p>
+          <h3>고객사 AX 사례집 받아보기</h3>
+          <p>국내 기업들이 AI 전환을 어떻게 했는지,<br />실제 사례를 정리했습니다.</p>
+        </div>
+        <a class="casebook-button" href="https://magicecole.vercel.app/inquiry">사례집 받기 →</a>
+      </div>
+    </section>
   </main>
 
-  <aside class="sidebar-right">
-    <div class="sidebar-label">이런 글은 어때요?</div>
-    <div class="related-card">
-      <div class="related-card-img">관련 글 썸네일</div>
-      <div class="related-card-title">AI 도입했는데 달라진 게 없다면, 문제는 AI가 아닙니다</div>
+  <section class="bottom-cta">
+    <div class="bottom-cta-inner">
+      <h2>우리 기업에 맞는 AX 솔루션이 궁금하신가요?</h2>
+      <p>3분 무료 진단으로 최적의 AX 솔루션을 제안드립니다.</p>
+      <a href="https://magicecole.vercel.app/inquiry">무료 진단 시작하기 →</a>
     </div>
-    <div class="related-card">
-      <div class="related-card-img">관련 글 썸네일</div>
-      <div class="related-card-title">제조 R&amp;D 기술 문서 분석, 3일에서 4시간으로</div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <a target="_blank" rel="noopener noreferrer" class="logo-link" href="https://magicecole.com/">
+          <img src="https://magicecole.vercel.app/logo.png" alt="매직에꼴" />
+        </a>
+        <div class="footer-nav">
+          <a href="https://magicecole.vercel.app/blog">블로그</a>
+          <a href="https://magicecole.vercel.app/products">제품 소개</a>
+          <a href="https://magicecole.vercel.app/ax-diagnosis">AX 진단</a>
+          <a href="https://magicecole.vercel.app/inquiry">AX 문의하기</a>
+          <a href="https://pf.kakao.com/_Vxifhn">카카오톡 채널</a>
+        </div>
+      </div>
+      <div class="footer-body">
+        <p>(주)매직에꼴</p>
+        <div class="footer-row">
+          <span>대표 최재규</span>
+          <span>사업자등록번호 309-87-02279</span>
+          <span>통신판매신고번호 제 2021-서울성동-01825호</span>
+        </div>
+        <div class="footer-row">
+          <span>📍 본점 서울 성동구 성수일로 10길 26, 하우스디센종타워 1505호</span>
+          <span>📍 지점 경기도 성남시 분당구 서현로210길 4층</span>
+        </div>
+        <div class="footer-row">
+          <span>📞 02-6223-9167</span>
+          <span>✉️ biz@magicecole.com</span>
+          <span>고객센터 카카오톡 채널 · 평일 10:00~18:00 (토·일·공휴일 휴무)</span>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>Copyright © magicecole Corp. All Rights Reserved.</p>
+      </div>
     </div>
-  </aside>
+  </footer>
 </div>
-
-<section class="footer-cta">
-  <h2>우리 기업에 맞는 AX 교육이 궁금하신가요?</h2>
-  <p>3분 무료 진단으로 최적의 AX 교육 솔루션을 추천해 드립니다.</p>
-  <a href="https://ax-inquiry-system.vercel.app/inquiry" class="footer-cta-btn">무료 AX 진단 받기 &rarr;</a>
-</section>
-
-<div class="bottom-nav">
-  <a href="#">&larr; 블로그 목록으로</a>
-  <a href="#">교육 문의하기</a>
-</div>
-
+<script>
+  const links = Array.from(document.querySelectorAll('.contents-link'));
+  const headings = Array.from(document.querySelectorAll('#article-content h2'));
+  const setActive = (id) => {{
+    links.forEach((link) => {{
+      link.classList.toggle('active', link.getAttribute('href') === `#${{id}}`);
+    }});
+  }};
+  if (headings.length) {{
+    const observer = new IntersectionObserver((entries) => {{
+      entries.forEach((entry) => {{
+        if (entry.isIntersecting) setActive(entry.target.id);
+      }});
+    }}, {{ rootMargin: '-20% 0px -70% 0px' }});
+    headings.forEach((heading) => observer.observe(heading));
+    setActive(headings[0].id);
+  }}
+</script>
 </body>
 </html>"""
 
@@ -813,10 +1351,12 @@ def main():
             thumbnail_html = f'<img class="thumbnail" src="data:{mime_type};base64,{encoded}" alt="{title}" />'
 
     headings = extract_headings(body)
+    reading_time = calculate_reading_time(body)
+    related_posts = load_related_posts(os.getcwd(), meta.get("post_id", ""))
     body_html = md_to_html(body, category)
     body_html = embed_local_images(body_html, post_dir)
 
-    html = build_blog_html(meta, body_html, headings, thumbnail_html)
+    html = build_blog_html(meta, body_html, headings, reading_time, related_posts, thumbnail_html)
 
     output_path = os.path.splitext(args.post_path)[0] + "_preview.html"
     with open(output_path, "w", encoding="utf-8") as f:
@@ -825,7 +1365,8 @@ def main():
     print(f"[블로그 프리뷰]")
     print(f"  제목: {title}")
     print(f"  카테고리: {cat_label} ({category})" if (cat_label := CATEGORY_LABELS.get(category)) else f"  카테고리: {category}")
-    print(f"  TOC: {len(headings)}개")
+    primary_headings = [h for h in headings if h.get("level") == 2]
+    print(f"  TOC: 핵심 헤더 {len(primary_headings)}개")
     print(f"  프리뷰: {output_path}")
 
 

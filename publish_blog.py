@@ -26,6 +26,7 @@ import io
 import argparse
 import re
 import base64
+import json
 import requests
 
 
@@ -49,7 +50,7 @@ def md_to_html(md_text):
     # 이미지
     html = re.sub(
         r"!\[([^\]]*)\]\(([^)]+)\)",
-        r'<img src="\2" alt="\1" style="max-width:100%;height:auto;" />',
+        r'<img src="\2" alt="\1" />',
         html,
     )
 
@@ -66,10 +67,8 @@ def md_to_html(md_text):
     html = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", html)
     html = re.sub(r"\*(.+?)\*", r"<em>\1</em>", html)
 
-    # 인용 블록 + CTA 블록
+    # 인용 블록
     def convert_blockquotes(text):
-        cta_keywords = ("컨설팅", "문의", "상담")
-        cta_actions = ("확인해보세요", "시작해보세요", "만나보세요", "알아보기")
         lines = text.split("\n")
         result = []
         in_quote = False
@@ -83,25 +82,45 @@ def md_to_html(md_text):
             else:
                 if in_quote:
                     content = "<br>\n".join(quote_lines)
-                    joined = " ".join(quote_lines)
-                    is_cta = any(k in joined for k in cta_keywords) and any(a in joined for a in cta_actions)
-                    if is_cta:
-                        result.append('<div class="cta-block">' + content + "</div>")
-                    else:
-                        result.append("<blockquote>" + content + "</blockquote>")
+                    result.append("<blockquote>" + content + "</blockquote>")
                     in_quote = False
                     quote_lines = []
                 result.append(line)
         if in_quote:
             content = "<br>\n".join(quote_lines)
-            joined = " ".join(quote_lines)
-            is_cta = any(k in joined for k in cta_keywords) and any(a in joined for a in cta_actions)
-            if is_cta:
-                result.append('<div class="cta-block">' + content + "</div>")
-            else:
-                result.append("<blockquote>" + content + "</blockquote>")
+            result.append("<blockquote>" + content + "</blockquote>")
         return "\n".join(result)
     html = convert_blockquotes(html)
+
+    def convert_cta_blocks(text):
+        def replace_cta(match):
+            inner = match.group(1)
+            if "<a " not in inner:
+                return match.group(0)
+
+            parts = [part.strip() for part in inner.split("<br>\n") if part.strip()]
+            title_html = ""
+            copy_lines = []
+            link_lines = []
+            for part in parts:
+                if "<a " in part:
+                    link_lines.append(part)
+                elif not title_html:
+                    title_html = part if "<strong>" in part else f"<strong>{part}</strong>"
+                else:
+                    copy_lines.append(part)
+
+            if not title_html or not link_lines:
+                return match.group(0)
+
+            cta_parts = [title_html]
+            cta_parts.extend(f'<p class="cta-copy">{line}</p>' for line in copy_lines)
+            cta_parts.extend(link_lines)
+            return f'<div class="cta-block">{"".join(cta_parts)}</div>'
+
+        return re.sub(r"<blockquote>(.*?)</blockquote>", replace_cta, text, flags=re.DOTALL)
+
+    html = convert_cta_blocks(html)
 
     # 테이블
     def convert_tables(text):
@@ -176,15 +195,69 @@ INLINE_STYLES = {
     "td": "padding:13px 20px;border-bottom:1px solid #e5e7eb;color:#374151;font-size:14.5px;word-break:keep-all;",
     "td_even": "padding:13px 20px;border-bottom:1px solid #e5e7eb;color:#374151;font-size:14.5px;word-break:keep-all;background:#f8fafc;",
     "td_last": "padding:13px 20px;border-bottom:none;color:#374151;font-size:14.5px;word-break:keep-all;",
-    "cta_block": "background-color:#1e3a5f;background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);color:#fff;padding:40px 36px;margin:48px 0 24px;border-radius:16px;text-align:center;font-size:17px;line-height:1.7;box-shadow:0 4px 16px rgba(37,99,235,0.2);",
-    "cta_strong": "color:#fff;font-size:21px;display:block;margin-bottom:16px;",
-    "cta_a": "color:#1e3a5f;background:#fff;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;display:inline-block;margin-top:8px;",
+    "cta_block": "background-color:#24446f;background:linear-gradient(135deg,#24446f 0%,#2f63dc 100%);color:#fff;padding:56px 28px 60px;margin:48px 0 32px;border-radius:24px;text-align:center;box-shadow:0 24px 48px rgba(37,99,235,0.18);",
+    "cta_strong": "color:#fff;font-size:22px;line-height:1.35;letter-spacing:-0.02em;display:block;margin-bottom:28px;",
+    "cta_copy": "margin:-8px auto 0;max-width:560px;color:#dbeafe;font-size:16px;line-height:1.7;",
+    "cta_a": "color:#1f3b67;background:#fff;padding:20px 32px;border-radius:16px;text-decoration:none;font-weight:800;font-size:16px;display:inline-flex;align-items:center;justify-content:center;min-width:280px;box-shadow:0 12px 28px rgba(15,23,42,0.16);",
 }
 
 
-def apply_inline_styles(html_body):
+INLINE_STYLE_THEMES = {
+    "AI Trend": {
+        "accent": "#7c3aed",
+        "blockquote_bg": "linear-gradient(135deg,#f5f3ff 0%,#ede9fe 100%)",
+        "blockquote_border": "#8b5cf6",
+        "blockquote_strong": "#5b21b6",
+        "cta_block": "background-color:#1e1b4b;background:linear-gradient(135deg,#1e1b4b 0%,#7c3aed 100%);color:#fff;padding:56px 28px 60px;margin:48px 0 32px;border-radius:24px;text-align:center;box-shadow:0 24px 48px rgba(124,58,237,0.18);",
+        "cta_copy": "margin:-8px auto 0;max-width:560px;color:#ddd6fe;font-size:16px;line-height:1.7;",
+        "cta_a": "color:#4c1d95;background:#fff;padding:20px 32px;border-radius:16px;text-decoration:none;font-weight:800;font-size:16px;display:inline-flex;align-items:center;justify-content:center;min-width:280px;box-shadow:0 12px 28px rgba(15,23,42,0.16);",
+    },
+    "Thought Leadership": {
+        "accent": "#2563eb",
+        "blockquote_bg": "linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%)",
+        "blockquote_border": "#60a5fa",
+        "blockquote_strong": "#1e40af",
+        "cta_block": INLINE_STYLES["cta_block"],
+        "cta_copy": INLINE_STYLES["cta_copy"],
+        "cta_a": INLINE_STYLES["cta_a"],
+    },
+    "Case Study": {
+        "accent": "#059669",
+        "blockquote_bg": "linear-gradient(135deg,#ecfdf5 0%,#d1fae5 100%)",
+        "blockquote_border": "#34d399",
+        "blockquote_strong": "#065f46",
+        "cta_block": "background-color:#064e3b;background:linear-gradient(135deg,#064e3b 0%,#059669 100%);color:#fff;padding:56px 28px 60px;margin:48px 0 32px;border-radius:24px;text-align:center;box-shadow:0 24px 48px rgba(5,150,105,0.18);",
+        "cta_copy": "margin:-8px auto 0;max-width:560px;color:#d1fae5;font-size:16px;line-height:1.7;",
+        "cta_a": "color:#064e3b;background:#fff;padding:20px 32px;border-radius:16px;text-decoration:none;font-weight:800;font-size:16px;display:inline-flex;align-items:center;justify-content:center;min-width:280px;box-shadow:0 12px 28px rgba(15,23,42,0.16);",
+    },
+    "Company News": {
+        "accent": "#ea580c",
+        "blockquote_bg": "linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%)",
+        "blockquote_border": "#fb923c",
+        "blockquote_strong": "#c2410c",
+        "cta_block": "background-color:#7c2d12;background:linear-gradient(135deg,#7c2d12 0%,#ea580c 100%);color:#fff;padding:56px 28px 60px;margin:48px 0 32px;border-radius:24px;text-align:center;box-shadow:0 24px 48px rgba(234,88,12,0.18);",
+        "cta_copy": "margin:-8px auto 0;max-width:560px;color:#fed7aa;font-size:16px;line-height:1.7;",
+        "cta_a": "color:#7c2d12;background:#fff;padding:20px 32px;border-radius:16px;text-decoration:none;font-weight:800;font-size:16px;display:inline-flex;align-items:center;justify-content:center;min-width:280px;box-shadow:0 12px 28px rgba(15,23,42,0.16);",
+    },
+}
+
+
+def get_inline_styles(category):
+    resolved = normalize_category(category)
+    theme = INLINE_STYLE_THEMES.get(resolved, INLINE_STYLE_THEMES["Thought Leadership"])
+    styles = dict(INLINE_STYLES)
+    styles["a"] = f'color:{theme["accent"]};'
+    styles["blockquote"] = f'background-color:#fff;background:{theme["blockquote_bg"]};border-left:4px solid {theme["blockquote_border"]};padding:24px 28px;margin:32px 0;border-radius:0 12px 12px 0;box-shadow:0 2px 8px rgba(15,23,42,0.06);font-size:16px;line-height:1.7;'
+    styles["blockquote_strong"] = f'color:{theme["blockquote_strong"]};'
+    styles["cta_block"] = theme["cta_block"]
+    styles["cta_copy"] = theme["cta_copy"]
+    styles["cta_a"] = theme["cta_a"]
+    return styles
+
+
+def apply_inline_styles(html_body, category=None):
     """HTML 본문의 태그에 인라인 style 속성을 삽입한다."""
-    s = INLINE_STYLES
+    s = get_inline_styles(category)
     result = html_body
 
     # 이미지
@@ -199,6 +272,7 @@ def apply_inline_styles(html_body):
         block = match.group(0)
         block = block.replace('<div class="cta-block">', f'<div style="{s["cta_block"]}">')
         block = re.sub(r"<strong>", f'<strong style="{s["cta_strong"]}">', block)
+        block = block.replace('<p class="cta-copy">', f'<p style="{s["cta_copy"]}">')
         block = re.sub(r"<a ", f'<a style="{s["cta_a"]}" ', block)
         return block
     result = re.sub(r'<div class="cta-block">.*?</div>', style_cta_block, result, flags=re.DOTALL)
@@ -281,14 +355,15 @@ def host_local_images(html, post_dir, imgbb_api_key):
 
 def render_post_markdown_html(body):
     """마크다운 본문을 블로그용 HTML로 변환한다. (md_to_html 래퍼)"""
-    return md_to_html(body)
+    html = md_to_html(body)
+    return re.sub(r"<h1[^>]*>[\s\S]*?</h1>\s*", "", html, count=1)
 
 # Windows 콘솔 인코딩 문제 방지
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
-BLOG_API_BASE = "https://ax-inquiry-system.vercel.app/api/blog"
+DEFAULT_BLOG_API_BASE = "https://magicecole.vercel.app/api/blog"
 
 
 def load_env(env_path=".env"):
@@ -303,6 +378,21 @@ def load_env(env_path=".env"):
             if "=" in line:
                 key, _, value = line.partition("=")
                 os.environ.setdefault(key.strip(), value.strip())
+
+
+def get_blog_api_base():
+    """환경 변수 또는 기본값에서 블로그 API 주소를 가져온다."""
+    value = os.environ.get("BLOG_API_BASE", DEFAULT_BLOG_API_BASE).strip()
+    return value or DEFAULT_BLOG_API_BASE
+
+
+def get_blog_site_base(blog_api_base):
+    """블로그 상세/어드민 링크에 사용할 사이트 기준 주소를 계산한다."""
+    explicit = os.environ.get("BLOG_SITE_BASE", "").strip()
+    if explicit:
+        return explicit.rstrip("/")
+    derived = re.sub(r"/api/blog/?$", "", blog_api_base.rstrip("/"))
+    return derived.rstrip("/")
 
 
 def parse_post_md(file_path):
@@ -426,11 +516,11 @@ def normalize_category(raw):
     return CATEGORY_MAP.get(lower, raw.strip().strip('"').strip("'"))
 
 
-def create_blog_post(payload):
+def create_blog_post(payload, blog_api_base):
     """블로그 API에 POST 요청으로 글을 생성한다."""
     try:
         resp = requests.post(
-            BLOG_API_BASE,
+            blog_api_base,
             json=payload,
             headers={"Content-Type": "application/json"},
             timeout=30,
@@ -440,7 +530,11 @@ def create_blog_post(payload):
         return None
     if resp.status_code not in (200, 201):
         print(f"[실패] 블로그 생성 실패 — HTTP {resp.status_code}")
-        print(f"  응답: {resp.text}")
+        if "DEPLOYMENT_NOT_FOUND" in resp.text:
+            print("  현재 BLOG_API_BASE가 가리키는 Vercel 배포를 찾을 수 없습니다.")
+            print("  .env에 BLOG_API_BASE=https://현재-블로그-도메인/api/blog 를 설정한 뒤 다시 시도하세요.")
+        else:
+            print(f"  응답: {resp.text}")
         return None
     try:
         return resp.json()
@@ -476,6 +570,8 @@ def main():
     # .env 로드
     script_dir = os.path.dirname(os.path.abspath(__file__))
     load_env(os.path.join(script_dir, ".env"))
+    blog_api_base = get_blog_api_base()
+    blog_site_base = get_blog_site_base(blog_api_base)
 
     # 파일 확인
     if not os.path.exists(args.post_path):
@@ -527,6 +623,8 @@ def main():
 
     # 태그 추출 (frontmatter의 target_keywords)
     tags = meta.get("target_keywords", "")
+    if isinstance(tags, list):
+        tags = json.dumps(tags, ensure_ascii=False)
 
     # subtitle 추출
     subtitle = meta.get("meta_description", "").strip('"').strip("'")
@@ -540,7 +638,8 @@ def main():
     html_body = render_post_markdown_html(body)
     if imgbb_key and imgbb_key not in imgbb_placeholders:
         html_body = host_local_images(html_body, post_dir, imgbb_key)
-    html_body = apply_inline_styles(html_body)
+    if os.environ.get("BLOG_LEGACY_INLINE_STYLES", "").strip().lower() in ("1", "true", "yes"):
+        html_body = apply_inline_styles(html_body, category)
 
     # API 페이로드 구성
     payload = {
@@ -555,6 +654,7 @@ def main():
         "featured": args.featured,
         "published": args.publish,
         "author": args.author,
+        "readingTime": reading_time,
     }
 
     mode = "발행" if args.publish else "초안 저장"
@@ -562,21 +662,22 @@ def main():
     print(f"  슬러그: {slug}")
     print(f"  모드: {mode}")
     print(f"  읽기 시간: {reading_time}분")
+    print(f"  API: {blog_api_base}")
     if thumbnail_url:
         print(f"  썸네일: {thumbnail_url}")
     print()
 
     # API 호출
     print(f"[1/1] 블로그 글 {'발행' if args.publish else '저장'} 중...")
-    result = create_blog_post(payload)
+    result = create_blog_post(payload, blog_api_base)
 
     if result:
         post_id = result.get("id", "")
         post_slug = result.get("slug", slug)
         print(f"\n[성공] 블로그 글이 {mode}되었습니다.")
         print(f"  ID: {post_id}")
-        print(f"  URL: https://ax-inquiry-system.vercel.app/blog/{post_slug}")
-        print(f"  어드민: https://ax-inquiry-system.vercel.app/admin/blog")
+        print(f"  URL: {blog_site_base}/blog/{post_slug}")
+        print(f"  어드민: {blog_site_base}/admin/blog")
     else:
         print(f"\n[실패] 블로그 글 {mode}에 실패했습니다.")
         sys.exit(1)
