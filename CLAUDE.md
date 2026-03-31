@@ -100,6 +100,7 @@
 - 전체 summaries를 읽고 LLM이 글감 후보 리스트를 생성한다.
 - 각 글감: 제목, 앵글, 카테고리, 소스 참조, 핵심 논점 포함
 - `schema-validator`로 필수 필드 검증. 실패 시 1회 재시도.
+- **중복 검사**: 각 글감 후보에 대해 `python scripts/publish_tracker.py check --title "{제목}" --keywords "{키워드}"` 실행. HIGH 유사도 글감은 목록에서 제외하거나 앵글 차별화 필요성을 표기한다.
 - 글감 후보 리스트를 사용자에게 출력하고 선택을 요청한다. (**Human-in-the-loop**)
 
 **단계 4 — 글감 카드 저장**
@@ -169,6 +170,12 @@
 - 전달: `draft_branded.md` + `seo_feedback.md` 경로
 - 출력: `output/drafts/{post_id}/draft_final.md`
 - LLM 자기 검증: SEO 반영 + 브랜드 보이스 훼손 없음 확인
+
+**단계 7.5 — AI 슬롭 자동 검사** (Orchestrator가 직접 수행)
+- `python scripts/slop_checker.py output/drafts/{post_id}/draft_final.md` 실행
+- **PASS** (종료 코드 0): 단계 8로 진행
+- **WARNING** (종료 코드 1): 경고 항목을 Writer에게 전달하여 1회 수정 후 재검사. 재검사 후에도 WARNING이면 담당자에게 안내 후 진행
+- **FAIL** (종료 코드 2): critical 항목을 Writer에게 전달하여 필수 수정. 수정 후 재검사에서 critical 0건이 되어야 단계 8 진행
 
 **단계 8 — 이미지 생성** (Orchestrator가 직접 수행)
 
@@ -263,6 +270,7 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
   3. 블로그 API로 글 생성 (`POST /api/blog`)
 - 필수 환경 변수: `IMGBB_API_KEY` (이미지 호스팅용)
 - 발행 성공 시: 블로그 URL을 담당자에게 안내
+- 발행 성공 후: `python scripts/publish_tracker.py log {post_id} --url {blog_url}` 실행하여 발행 이력 기록
 - 발행 실패 시: 에러 메시지를 안내하고 1회 재시도 후 에스컬레이션
 - 출력: 콘솔에 발행 결과 (글 ID, 블로그 URL)
 
@@ -315,13 +323,20 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 
 서브에이전트는 `/.claude/agents/{agent-name}/AGENT.md`의 지침에 따라 동작한다.
 
-| 에이전트 | 호출 시점 | 전달 방식 |
-|---|---|---|
-| Writer | 초고 작성, 피드백 반영 수정, 최종본 생성 | 파일 경로 + 카테고리 코드 |
-| Reviewer | 초고/수정본 검토 필요 시 | 파일 경로 (draft + 브리핑) |
-| Brand Editor | Reviewer 루프 통과 후 | 파일 경로 (draft + 브랜드 가이드) |
-| SEO Specialist | Brand Editor 피드백 반영 완료 후 | 파일 경로 (branded draft) |
-| Visual Editor | 담당자 피드백 반영 완료 후 (단계 10) | 파일 경로 (post.md + images/) + 카테고리 코드 |
+### 모델 배분 규칙
+
+비용 대비 품질 최적화를 위해 에이전트별로 모델을 분리한다. Agent 호출 시 `model` 파라미터로 지정한다.
+
+- **Opus** (판단·검증 중심): Orchestrator (기본), Reviewer
+- **Sonnet** (생성·정형 작업 중심): Writer, Brand Editor, SEO Specialist, Visual Editor
+
+| 에이전트 | 모델 | 호출 시점 | 전달 방식 |
+|---|---|---|---|
+| Writer | **sonnet** | 초고 작성, 피드백 반영 수정, 최종본 생성 | 파일 경로 + 카테고리 코드 |
+| Reviewer | **opus** | 초고/수정본 검토 필요 시 | 파일 경로 (draft + 브리핑) |
+| Brand Editor | **sonnet** | Reviewer 루프 통과 후 | 파일 경로 (draft + 브랜드 가이드) |
+| SEO Specialist | **sonnet** | Brand Editor 피드백 반영 완료 후 | 파일 경로 (branded draft) |
+| Visual Editor | **sonnet** | 담당자 피드백 반영 완료 후 (단계 10) | 파일 경로 (post.md + images/) + 카테고리 코드 |
 
 ---
 
@@ -339,6 +354,10 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 | `diagram-renderer` | 단계 8d: Mermaid 다이어그램 렌더링 | Orchestrator |
 | `schema-validator` | 각 단계 산출물 생성 직후 | Orchestrator |
 | `publish_blog.py` | 단계 11a: 블로그 발행 실행 시 | Orchestrator |
+| `scripts/slop_checker.py` | 단계 7.5: 텍스트 최종본 AI 슬롭 자동 검사 | Orchestrator |
+| `scripts/publish_tracker.py check` | 단계 3: 글감 중복 검사 / 신규 글 작성 전 | Orchestrator |
+| `scripts/publish_tracker.py log` | 단계 11: 발행 완료 후 이력 기록 | Orchestrator |
+| `scripts/publish_tracker.py stats` | 발행 현황 조회 요청 시 | Orchestrator |
 
 ---
 
@@ -359,7 +378,10 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 | 텍스트 검증 (8b-1) | 텍스트 깨짐/오타/잘림/중복 없음 | 수정 프롬프트로 재생성 (이미지당 최대 2회) |
 | 스크린샷 캡처 (10a) | 파일 존재 + 캡처 성공 | 대체 URL 1회 시도 후 스킵 |
 | 다이어그램 전문화 (10b) | 렌더링 성공 | 실패 시 기존 다이어그램 유지 |
+| AI 슬롭 검사 (7.5) | `slop_checker.py` 종료 코드 0 (PASS) | FAIL: Writer 수정 후 재검사. WARNING: 1회 수정 시도 후 담당자 안내 |
+| 중복 검사 (3) | `publish_tracker.py check` HIGH 유사도 0건 | HIGH: 해당 글감 제외 또는 앵글 차별화. MEDIUM: 사용자에게 안내 |
 | 블로그 발행 (11a) | HTTP 200 응답 + 글 ID 반환 | 1회 재시도 후 에스컬레이션. 슬러그 중복 시 슬러그 수정 후 재시도 |
+| 발행 이력 기록 (11) | `publish_tracker.py log` 정상 실행 | 실패 시 수동 기록 안내 |
 
 ---
 
