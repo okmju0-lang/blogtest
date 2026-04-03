@@ -35,6 +35,14 @@
 | **Company News** | 강의, 시상, 정부사업 수주 등 대외 활동 | 내부 브리핑 + 참고 URL (선택) | 리드 → 상세 내용 → 의미/맥락 → 향후 계획 |
 | **AI Trend** | AI 최신 트렌드 이슈, 새로운 기능 | 외부 소스 URL (YouTube + 웹) | 트렌드 소개 → 핵심 변화 → 영향 분석 → 실무 시사점 |
 
+### Case Study 소스 우선순위
+
+- 금요일 `Case Study`의 **주제 선정**과 **자료 수집**은 로컬 `AX 훈련/` 폴더를 1차 소스로 사용한다.
+- 사용자가 별도 소스를 지정하지 않았다면 `AX 훈련/` 안의 하위 폴더/파일을 먼저 확인하고, 그 안에서 사례 후보와 핵심 근거를 뽑는다.
+- 외부 URL 또는 웹 리서치는 `AX 훈련/` 자료만으로 배경 설명이 부족할 때만 보조적으로 사용한다. 본문 사실, 수치, 사례 판단의 기준은 여전히 사용자가 제공한 로컬 자료다.
+- `AX 훈련/` 자료는 **AI 활용에는 비전문가이지만 각자 실무 맥락은 잘 아는 참여자들**이 남긴 현장 기록으로 간주한다. 따라서 AI 방법론의 권위 있는 해설로 과장하지 않고, "이런 경우가 있었다", "현장에서 이런 반응이 나왔다"는 사례 맥락으로 해석한다.
+- `AX 훈련/` 자료에서 확인된 경험담과 관찰은 사례 후보 발굴과 문제 맥락 설명에 우선 활용하되, AI 전문 지식의 일반 법칙처럼 단정하지 않는다.
+
 ### 입력 경로 분기
 
 ```
@@ -124,6 +132,8 @@
 **단계 0**: 사용자로부터 작업 지시를 받는다.
 - 필수: 카테고리 지정 (4개 중 하나). 누락 시 사용자에게 확인 요청.
 - 필수: 글감 카드 ID, 내부 브리핑 텍스트, 또는 주제 리서치 결과 중 하나 이상.
+- 금요일 `Case Study` 주제 제안 또는 자료 조사 요청인 경우: 사용자가 다른 소스를 지정하지 않았다면 먼저 `AX 훈련/` 폴더를 확인하여 해당 자료를 주 소스로 채택한다.
+- 이때 `AX 훈련/` 자료는 AI 활용 초입에 있는 실무자들의 현장 사례 메모로 해석한다. 표현은 "참여자들이 겪은 사례", "실습 과정에서 확인된 패턴" 중심으로 정리하고, AI 전문가 검증이 끝난 결론처럼 쓰지 않는다.
 
 **단계 0.5 — 브리핑 저장** (내부 브리핑인 경우만)
 - `file-manager` 스킬로 `output/briefings/brief_{timestamp}.md` 저장.
@@ -132,13 +142,21 @@
 **단계 1 — 초고 작성** → **Writer 서브에이전트 호출**
 - 전달 전에 `output/variant_registry.md`를 확인하여 해당 카테고리의 직전 변형을 파악한다.
 - 전달: 글감 카드/브리핑 경로 + 소스 파일 경로 + 카테고리 코드 + **직전 변형 정보**
+- **컨텍스트 최소화 원칙**: Writer에는 해당 카테고리 템플릿 1개, `references/writing-standards.md`, 필요한 경우에만 `weekly-content-design.md` 또는 `ax-resources.md`를 함께 전달한다. 관련 없는 템플릿/레퍼런스는 넘기지 않는다.
 - Writer가 해당 카테고리 템플릿(`/.claude/agents/writer/references/templates/`)을 참조하여 초고를 작성한다.
 - Writer는 직전 변형과 다른 변형을 우선 선택한다.
 - 출력: `output/drafts/{post_id}/draft_v1.md`
 - `post_id` 형식: `post_{YYYYMMDD}_{n}`
 
+**단계 1.5 — 제목 선택** (**Human-in-the-loop**)
+- Writer가 제안한 제목 후보 A/B/C를 사용자에게 제시한다.
+- 각 후보의 앵글(문제형/결과형/질문형)을 간략히 설명한다.
+- 사용자가 선택하거나 수정한 제목을 `draft_v1.md` frontmatter의 `title` 필드에 반영한 후 단계 2로 진행한다.
+- 사용자가 "그냥 진행", "알아서 해줘" 등으로 선택을 위임하면 Orchestrator가 셋 중 가장 비전문가 친화적인 제목을 선택한다.
+
 **단계 2 — 비판적 검토 + 팩트체크 + 기밀 필터링** → **Reviewer 서브에이전트 호출**
 - 전달: draft 파일 경로 + 원본 브리핑 경로 (기밀 대조용)
+- Reviewer에는 draft, 원본 브리핑, `confidential-checklist.md`만 우선 전달한다. 추가 참조는 검토에 꼭 필요할 때만 확장한다.
 - 출력: `output/drafts/{post_id}/review_v{n}.md`
 - 반드시 포함: 논리/사실/근거 피드백, 팩트체크 출처 URL, **기밀 필터링 결과** (confidential 태그)
 
@@ -155,6 +173,7 @@
 
 **단계 4 — 브랜드 보이스 피드백** → **Brand Editor 서브에이전트 호출**
 - 전달: 현재 draft 파일 경로 + `/.claude/agents/brand-editor/references/brand-voice-guide.md` 경로
+- Brand Editor에는 draft와 brand guide만 전달한다. 예시 샘플이나 이전 단계 산출물은 필요 시에만 추가한다.
 - 출력: `output/drafts/{post_id}/brand_feedback.md`
 
 **단계 5 — 브랜드 보이스 반영** → **Writer 서브에이전트 호출**
@@ -163,6 +182,7 @@
 
 **단계 6 — SEO 최적화 피드백** → **SEO Specialist 서브에이전트 호출**
 - 전달: `draft_branded.md` 경로
+- SEO Specialist에는 `draft_branded.md`와 `seo-checklist.md`만 우선 전달한다.
 - 출력: `output/drafts/{post_id}/seo_feedback.md`
 - 필수 포함: 제목 최적화, 메타 디스크립션, 타겟 키워드, 헤딩 구조
 
@@ -235,6 +255,7 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 
 **단계 10 — 비주얼 강화** → **Visual Editor 서브에이전트 호출**
 - 전달: `output/posts/{post_id}/post.md` 경로 + `output/posts/{post_id}/images/` 경로 + 카테고리 코드
+- Visual Editor에는 `post.md`, `images/`, `visual-guide.md`를 우선 전달한다. 웹 검색이나 추가 참조는 보강 대상이 있을 때만 사용한다.
 - Visual Editor가 수행하는 작업:
 
   10a. **웹 스크린샷 캡처**
@@ -257,8 +278,15 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 
 **단계 11 — 블로그 발행** (Orchestrator가 직접 수행)
 
-단계 10 완료 후, 담당자에게 발행 여부를 확인한다. (**Human-in-the-loop**)
+단계 10 완료 후, 발행 전에 반드시 프리뷰를 생성하고 담당자에게 검토를 요청한다. (**Human-in-the-loop**)
 
+**11-0. 프리뷰 생성 (발행 전 필수)**
+- `python preview_blog.py output/posts/{post_id}/post.md` 실행
+- 출력: `output/posts/{post_id}/post_preview.html`
+- 담당자에게 프리뷰 파일 경로를 안내하고, 브라우저로 열어 확인 후 발행 여부를 결정해달라고 요청한다.
+- 프리뷰 확인 없이 발행 진행 금지.
+
+**11-1. 발행 실행**
 - `publish_blog.py` 스크립트를 실행한다.
 - 초안 저장: `python publish_blog.py output/posts/{post_id}/post.md`
 - 즉시 발행: `python publish_blog.py output/posts/{post_id}/post.md --publish`
@@ -353,7 +381,8 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 | `image-generator` (generate_image.py) | 단계 8: 텍스트 최종본 확정 후 이미지 3장 생성 | Orchestrator |
 | `diagram-renderer` | 단계 8d: Mermaid 다이어그램 렌더링 | Orchestrator |
 | `schema-validator` | 각 단계 산출물 생성 직후 | Orchestrator |
-| `publish_blog.py` | 단계 11a: 블로그 발행 실행 시 | Orchestrator |
+| `preview_blog.py` | 단계 11-0: 발행 전 프리뷰 생성 (필수) | Orchestrator |
+| `publish_blog.py` | 단계 11-1: 블로그 발행 실행 시 | Orchestrator |
 | `scripts/slop_checker.py` | 단계 7.5: 텍스트 최종본 AI 슬롭 자동 검사 | Orchestrator |
 | `scripts/publish_tracker.py check` | 단계 3: 글감 중복 검사 / 신규 글 작성 전 | Orchestrator |
 | `scripts/publish_tracker.py log` | 단계 11: 발행 완료 후 이력 기록 | Orchestrator |
@@ -669,7 +698,8 @@ Orchestrator는 각 단계를 종료하고 다음 단계로 넘어가기 전에 
 
 ### 블로그 발행 시 (단계 11)
 
-- [ ] 담당자가 발행을 승인했는가?
+- [ ] `preview_blog.py`로 프리뷰를 생성했는가? (`post_preview.html` 존재)
+- [ ] 담당자가 프리뷰를 확인하고 발행을 승인했는가?
 - [ ] `IMGBB_API_KEY` 환경 변수가 설정되었는가?
 - [ ] `publish_blog.py` 실행이 성공했는가? (글 ID + 블로그 URL 반환 확인)
 

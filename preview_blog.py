@@ -954,17 +954,22 @@ SITE_CSS = """
     text-align: center; font-size: 13px; color: #9ca3af; margin-top: 10px;
   }
   .blog-prose .table-wrap {
-    overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 20px; margin: 28px 0;
+    overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch;
+    border-radius: 16px; margin: 28px 0;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
   }
   .blog-prose table { width: 100%; border-collapse: collapse; min-width: 640px; }
   .blog-prose th {
-    text-align: left; font-size: 14px; font-weight: 700; color: #111827;
-    padding: 16px 18px; background: #f8fafc; border-bottom: 1px solid #e5e7eb;
+    text-align: left; font-size: 14px; font-weight: 700; color: #fff;
+    padding: 14px 20px; white-space: nowrap; letter-spacing: 0.2px;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   }
   .blog-prose td {
-    font-size: 15px; line-height: 1.7; color: #374151;
-    padding: 16px 18px; border-bottom: 1px solid #eef2f7; vertical-align: top;
+    font-size: 14.5px; line-height: 1.7; color: #374151;
+    padding: 13px 20px; border-bottom: 1px solid #e5e7eb; vertical-align: top;
+    word-break: keep-all;
   }
+  .blog-prose tbody tr:nth-child(even) td { background: #f8fafc; }
   .blog-prose tbody tr:last-child td { border-bottom: none; }
   .related-shell {
     margin-top: 64px; padding-top: 40px; border-top: 1px solid #f3f4f6;

@@ -1,2 +1,14 @@
 node_modules/
 .env
+__pycache__/
+*.py[cod]
+*.zip
+
+.claude/worktrees/
+
+output/publish_log.md
+output/**/__pycache__/
+output/**/post_preview.html
+output/**/images/*_source.html
+output/**/images/*_mermaid.png
+output/**/render_*.py

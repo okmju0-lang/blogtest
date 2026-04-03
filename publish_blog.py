@@ -261,11 +261,12 @@ def apply_inline_styles(html_body, category=None):
     result = html_body
 
     # 이미지
-    result = re.sub(
-        r'<img ([^>]*)style="[^"]*"([^>]*)/>',
-        lambda m: f'<img {m.group(1)}style="{s["img"]}"{m.group(2)}/>',
-        result,
-    )
+    def style_img(match):
+        attrs = re.sub(r'\sstyle="[^"]*"', "", match.group(1) or "").strip()
+        suffix = "/" if match.group(2) == "/" else ""
+        attrs = f" {attrs}" if attrs else ""
+        return f'<img{attrs} style="{s["img"]}"{suffix}>'
+    result = re.sub(r"<img([^>]*?)(/?)>", style_img, result)
 
     # CTA 블록
     def style_cta_block(match):
@@ -415,10 +416,50 @@ def parse_post_md(file_path):
     return meta, body
 
 
+def resize_image_bytes(file_path: str) -> bytes:
+    """이미지를 메모리에서 리사이즈하여 바이트로 반환한다. 원본 파일은 변경하지 않는다.
+
+    이미지 유형별 최대 가로 폭:
+        thumbnail      → 1280px (16:9 기준 1280×720)
+        그 외 (illustration, screenshot 등) → 1200px
+
+    이미 기준 폭 이하이면 원본 바이트를 그대로 반환한다.
+    Pillow가 없으면 원본 바이트를 반환한다.
+    """
+    try:
+        from PIL import Image
+    except ImportError:
+        with open(file_path, "rb") as f:
+            return f.read()
+
+    name = os.path.basename(file_path).lower()
+    max_width = 1280 if "thumbnail" in name else 1200
+
+    with Image.open(file_path) as img:
+        w, h = img.size
+        if w <= max_width:
+            with open(file_path, "rb") as f:
+                return f.read()
+
+        new_w = max_width
+        new_h = round(h * max_width / w)
+        resized = img.resize((new_w, new_h), Image.LANCZOS)
+
+        buf = io.BytesIO()
+        fmt = img.format or "PNG"
+        resized.save(buf, format=fmt, optimize=True)
+        original_kb = os.path.getsize(file_path) // 1024
+        resized_kb = buf.tell() // 1024
+        print(f"  [리사이즈] {os.path.basename(file_path)}: {w}×{h} → {new_w}×{new_h} "
+              f"({original_kb}KB → {resized_kb}KB)")
+        buf.seek(0)
+        return buf.read()
+
+
 def upload_image_to_imgbb(file_path, api_key):
-    """이미지를 imgbb에 업로드하고 호스팅 URL을 반환한다."""
-    with open(file_path, "rb") as f:
-        encoded = base64.b64encode(f.read()).decode("ascii")
+    """이미지를 리사이즈한 뒤 imgbb에 업로드하고 호스팅 URL을 반환한다."""
+    image_bytes = resize_image_bytes(file_path)
+    encoded = base64.b64encode(image_bytes).decode("ascii")
     try:
         resp = requests.post(
             "https://api.imgbb.com/1/upload",
@@ -638,8 +679,7 @@ def main():
     html_body = render_post_markdown_html(body)
     if imgbb_key and imgbb_key not in imgbb_placeholders:
         html_body = host_local_images(html_body, post_dir, imgbb_key)
-    if os.environ.get("BLOG_LEGACY_INLINE_STYLES", "").strip().lower() in ("1", "true", "yes"):
-        html_body = apply_inline_styles(html_body, category)
+    html_body = apply_inline_styles(html_body, category)
 
     # API 페이로드 구성
     payload = {
