@@ -21,6 +21,7 @@ API 호출은 이미지 생성에만 사용하며, 텍스트 분석은 호출하
 
 import os
 import sys
+import io
 import json
 import time
 import argparse
@@ -47,6 +48,52 @@ KOREAN_TEXT_RULE = (
     "Use English only when it improves clarity, matches a well-known product term, "
     "or is a short acronym such as AI, API, CRM, or R&D."
 )
+
+
+# 이미지 유형별 최대 가로 폭
+_MAX_WIDTH = {
+    "thumbnail": 1280,   # 16:9 → 1280×720
+    "illustration": 1200, # 4:3 → 1200×900
+}
+
+
+def _resize_image_bytes(image_bytes: bytes, image_type: str) -> tuple[bytes, dict]:
+    """생성된 이미지 바이트를 최대 폭 기준으로 리사이즈한다.
+
+    Returns:
+        (리사이즈된 바이트, 리사이즈 정보 dict)
+        Pillow 미설치 시 원본 바이트와 빈 dict 반환.
+    """
+    max_width = _MAX_WIDTH.get(image_type, 1200)
+    try:
+        from PIL import Image
+    except ImportError:
+        return image_bytes, {}
+
+    with Image.open(io.BytesIO(image_bytes)) as img:
+        orig_w, orig_h = img.size
+        if orig_w <= max_width:
+            return image_bytes, {"resized": False, "dimensions": f"{orig_w}×{orig_h}"}
+
+        new_w = max_width
+        new_h = round(orig_h * max_width / orig_w)
+        resized = img.resize((new_w, new_h), Image.LANCZOS)
+
+        buf = io.BytesIO()
+        resized.save(buf, format="PNG", optimize=True)
+        result_bytes = buf.getvalue()
+
+        orig_kb = len(image_bytes) // 1024
+        new_kb = len(result_bytes) // 1024
+        print(f"  [리사이즈] {orig_w}×{orig_h} → {new_w}×{new_h} "
+              f"({orig_kb}KB → {new_kb}KB)")
+        return result_bytes, {
+            "resized": True,
+            "original_dimensions": f"{orig_w}×{orig_h}",
+            "resized_dimensions": f"{new_w}×{new_h}",
+            "original_kb": orig_kb,
+            "resized_kb": new_kb,
+        }
 
 
 def enforce_korean_text_prompt(prompt: str) -> str:
@@ -119,13 +166,14 @@ def generate_image(prompt: str, image_type: str, output_path: str) -> dict:
                 raise ValueError("이미지 생성 결과가 비어 있습니다.")
 
             image_bytes = image_part.inline_data.data
+            image_bytes, resized_info = _resize_image_bytes(image_bytes, image_type)
             out_p.write_bytes(image_bytes)
 
             file_size = out_p.stat().st_size
             if file_size < 10_000:
                 raise ValueError(f"생성된 이미지가 너무 작습니다: {file_size} bytes")
 
-            return {
+            result = {
                 "success": True,
                 "file": str(out_p),
                 "size_bytes": file_size,
@@ -134,6 +182,8 @@ def generate_image(prompt: str, image_type: str, output_path: str) -> dict:
                 "model": "gemini-3.1-flash-image-preview (Nano Banana 2)",
                 "korean_text_enforced": effective_prompt != prompt,
             }
+            result.update(resized_info)
+            return result
         except Exception as e:
             if attempt < 1:
                 time.sleep(5)
@@ -216,7 +266,7 @@ def main():
     args = parser.parse_args()
 
     # .env 로드
-    env_path = Path(__file__).resolve().parents[3] / ".env"
+    env_path = Path(__file__).resolve().parents[4] / ".env"
     if env_path.exists():
         with open(env_path, encoding="utf-8") as f:
             for line in f:

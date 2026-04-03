@@ -21,7 +21,17 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(git:*)",
-      "Bash(start:*)"
+      "Bash(start:*)",
+      "Bash(find '/c/Users/MagicecoleGuest/Desktop/김진수/블로그 작성/output' -type f -name *.md)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(curl -s \"https://magicecole.vercel.app/blog\")",
+      "Bash(python -c \"print\\(''hello''\\)\")",
+      "Bash(python3 -c \"print\\(''hello''\\)\")",
+      "Bash(py --version)",
+      "Bash(py:*)",
+      "Bash(PYTHONIOENCODING=utf-8 py -u .claude/skills/tavily-search/scripts/search.py --query \"Cloudera HBR 2026 only 7 percent enterprises data ready AI\" --mode factcheck --max_results 3)",
+      "Bash(echo \"EXIT_CODE:$?\")",
+      "Bash(curl -s \"https://magicecole.vercel.app/blog/ai-data-readiness-checklist\")"
     ]
   }
 }

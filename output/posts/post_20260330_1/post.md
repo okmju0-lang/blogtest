@@ -141,7 +141,8 @@ LlamaIndex 창업자 Jerry Liu가 지적한 것처럼, GraphRAG는 기존 RAG를
 준비된 조직은 이미 데이터를 그래프로 구조화하고 있습니다. 아직 RAG 자체가 낯설다면, 지금이 출발점을 잡을 때입니다. 어디서부터 시작해야 할지 막막하다면, 함께 설계하면 됩니다.
 
 > **우리 조직의 데이터, 어떤 RAG 전략이 맞을까요?**
-> [매직에꼴 AX 컨설팅 알아보기 ->](https://magicecole.vercel.app/inquiry)
+> 매직에꼴 AX 컨설팅은 데이터 구조와 질문 유형에 맞는 AI 검색 전략을 함께 설계합니다.
+> [매직에꼴 AX 컨설팅 알아보기 ->](https://ax-inquiry-system.vercel.app/inquiry)
 
 ---
 

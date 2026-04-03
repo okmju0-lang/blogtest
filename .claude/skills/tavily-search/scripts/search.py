@@ -72,7 +72,7 @@ def main():
 
     # .env 로드
     from pathlib import Path
-    env_path = Path(__file__).resolve().parents[3] / ".env"
+    env_path = Path(__file__).resolve().parents[4] / ".env"
     if env_path.exists():
         with open(env_path, encoding="utf-8") as f:
             for line in f:

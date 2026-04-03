@@ -1,5 +1,8 @@
 # AX 블로그 에이전트 Python 의존성
 
+# 이미지 리사이즈 (발행 전 용량 최적화)
+Pillow>=10.0.0
+
 # YouTube 자막 추출
 youtube-transcript-api>=0.6.0
 
