@@ -48,9 +48,14 @@ AI 프로젝트를 세 발 달린 의자로 비유한다면, 모델·프로세�
 
 데이터 준비도는 크게 4가지 축으로 점검할 수 있습니다.
 
-<div style="margin:24px 0;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.08);border:1px solid #cbd5e1;"><table style="width:100%;border-collapse:collapse;font-size:15px;line-height:1.7;"><thead><tr style="background:#e2e8f0;"><th style="padding:14px 18px;text-align:left;font-weight:800;font-size:15px;color:#0f172a;border-right:1px solid #cbd5e1;border-bottom:2px solid #94a3b8;">점검 축</th><th style="padding:14px 18px;text-align:left;font-weight:800;font-size:15px;color:#0f172a;border-right:1px solid #cbd5e1;border-bottom:2px solid #94a3b8;">핵심 질문</th><th style="padding:14px 18px;text-align:left;font-weight:800;font-size:15px;color:#0f172a;border-bottom:2px solid #94a3b8;">어떤 일이 생기나</th></tr></thead><tbody><tr style="background:#f8fafc;"><td style="padding:12px 18px;border-bottom:1px solid #cbd5e1;border-right:1px solid #cbd5e1;font-weight:700;color:#0f172a;">품질</td><td style="padding:12px 18px;border-bottom:1px solid #cbd5e1;border-right:1px solid #cbd5e1;color:#334155;">정확하고 일관된 데이터인가</td><td style="padding:12px 18px;border-bottom:1px solid #cbd5e1;color:#334155;">모델이 엉뚱한 답을 내기 시작한다</td></tr><tr style="background:#ffffff;"><td style="padding:12px 18px;border-bottom:1px solid #cbd5e1;border-right:1px solid #cbd5e1;font-weight:700;color:#0f172a;">사일로</td><td style="padding:12px 18px;border-bottom:1px solid #cbd5e1;border-right:1px solid #cbd5e1;color:#334155;">부서 간 데이터가 연결되어 있는가</td><td style="padding:12px 18px;border-bottom:1px solid #cbd5e1;color:#334155;">전체 그림 없이 부분만 학습한다</td></tr><tr style="background:#f8fafc;"><td style="padding:12px 18px;border-bottom:1px solid #cbd5e1;border-right:1px solid #cbd5e1;font-weight:700;color:#0f172a;">거버넌스</td><td style="padding:12px 18px;border-bottom:1px solid #cbd5e1;border-right:1px solid #cbd5e1;color:#334155;">데이터 소유권과 계보가 명확한가</td><td style="padding:12px 18px;border-bottom:1px solid #cbd5e1;color:#334155;">감사 불가, 리스크가 조용히 쌓인다</td></tr><tr style="background:#ffffff;"><td style="padding:12px 18px;border-right:1px solid #cbd5e1;font-weight:700;color:#0f172a;">드리프트</td><td style="padding:12px 18px;border-right:1px solid #cbd5e1;color:#334155;">데이터가 현실을 여전히 반영하는가</td><td style="padding:12px 18px;color:#334155;">성능이 바래 사라지고 ROI가 소멸한다</td></tr></tbody></table></div>
+| 점검 축 | 핵심 질문 | 어떤 일이 생기나 |
+|---|---|---|
+| 품질 | 정확하고 일관된 데이터인가 | 모델이 엉뚱한 답을 내기 시작한다 |
+| 사일로 | 부서 간 데이터가 연결되어 있는가 | 전체 그림 없이 부분만 학습한다 |
+| 거버넌스 | 데이터 소유권과 계보가 명확한가 | 감사 불가, 리스크가 조용히 쌓인다 |
+| 드리프트 | 데이터가 현실을 여전히 반영하는가 | 성능이 바래 사라지고 ROI가 소멸한다 |
 
-<div style="margin:18px 0;padding:20px 24px;border-radius:14px;border-left:5px solid #c9a227;background:linear-gradient(135deg,#fefce8 0%,#fef9c3 100%);"><div style="font-size:15px;font-weight:800;color:#92400e;margin-bottom:8px;">핵심</div><div style="font-size:15px;line-height:1.8;color:#1e293b;">데이터 준비도는 "있느냐"가 아니라 "쓸 수 있느냐"의 문제입니다.</div></div>
+> **핵심**: 데이터 준비도는 "있느냐"가 아니라 "쓸 수 있느냐"의 문제입니다.
 
 각 축을 하나씩 짚어보겠습니다.
 
@@ -136,17 +141,18 @@ AI는 어느 날 갑자기 실패하지 않습니다. 정확도가 조금씩 바
 
 데이터 준비도 점검을 어디서부터 시작해야 할지 모르겠다면, 다음 세 가지를 오늘 당장 해볼 수 있습니다.
 
-<div style="margin:18px 0;padding:20px 24px;border-radius:14px;border-left:5px solid #c9a227;background:linear-gradient(135deg,#fefce8 0%,#fef9c3 100%);"><div style="font-size:15px;font-weight:800;color:#92400e;margin-bottom:8px;">실행 포인트 1</div><div style="font-size:15px;line-height:1.8;color:#1e293b;">AI에 가장 먼저 적용하려는 업무 영역을 하나 정하고, 그 영역에서 사용하는 데이터 소스 목록을 작성하세요. 몇 개 부서에 흩어져 있습니까? 포맷이 통일되어 있습니까?</div></div>
+> **실행 포인트 1**: AI에 가장 먼저 적용하려는 업무 영역을 하나 정하고, 그 영역에서 사용하는 데이터 소스 목록을 작성하세요. 몇 개 부서에 흩어져 있습니까? 포맷이 통일되어 있습니까?
 
-<div style="margin:18px 0;padding:20px 24px;border-radius:14px;border-left:5px solid #c9a227;background:linear-gradient(135deg,#fefce8 0%,#fef9c3 100%);"><div style="font-size:15px;font-weight:800;color:#92400e;margin-bottom:8px;">실행 포인트 2</div><div style="font-size:15px;line-height:1.8;color:#1e293b;">그 데이터들의 소유자를 확인하세요. "이 데이터는 누가 관리하고 있습니까?"라는 질문에 30분 안에 답이 나오지 않는다면 거버넌스 공백이 있는 겁니다.</div></div>
+> **실행 포인트 2**: 그 데이터들의 소유자를 확인하세요. "이 데이터는 누가 관리하고 있습니까?"라는 질문에 30분 안에 답이 나오지 않는다면 거버넌스 공백이 있는 겁니다.
 
-<div style="margin:18px 0;padding:20px 24px;border-radius:14px;border-left:5px solid #c9a227;background:linear-gradient(135deg,#fefce8 0%,#fef9c3 100%);"><div style="font-size:15px;font-weight:800;color:#92400e;margin-bottom:8px;">실행 포인트 3</div><div style="font-size:15px;line-height:1.8;color:#1e293b;">그 데이터가 마지막으로 업데이트된 시점을 확인하세요. 1년 이상 업데이트되지 않은 데이터가 있다면 드리프트 리스크를 안고 AI를 도입하려는 것입니다.</div></div>
+> **실행 포인트 3**: 그 데이터가 마지막으로 업데이트된 시점을 확인하세요. 1년 이상 업데이트되지 않은 데이터가 있다면 드리프트 리스크를 안고 AI를 도입하려는 것입니다.
 
 이 세 가지 점검만 해도 우리 조직의 데이터 준비도가 어느 수준인지 윤곽이 잡힙니다. 더 구체적인 진단이 필요하다면, 매직에꼴의 AX 진단을 통해 데이터·전략·조직·프로세스 전 영역을 체계적으로 점검해볼 수 있습니다.
 
 MIT 연구가 짚은 핵심은 분명합니다. 실패의 원인은 모델이 아니었습니다. 워크플로우 통합 부재, 조직 정렬 실패, 그리고 데이터 준비도 부족입니다. 데이터를 먼저 점검한 조직만이 AI에서 실질적인 결과를 만들어냅니다.
 
-<div style="margin:28px 0 0;padding:28px;border-radius:22px;background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);box-shadow:0 18px 36px rgba(30,58,95,.14);text-align:center;color:#ffffff;"><div style="font-size:24px;font-weight:900;line-height:1.4;letter-spacing:-.03em;">우리 회사 데이터, 정말 쓸 수 있는 상태입니까?</div><div style="margin-top:10px;font-size:16px;line-height:1.7;color:rgba(255,255,255,.84);">매직에꼴 AX 컨설팅은 데이터·전략·조직·프로세스 전 영역을 체계적으로 진단합니다.</div><div style="margin-top:18px;"><a href="https://ax-inquiry-system.vercel.app/inquiry" style="display:inline-block;padding:12px 22px;border-radius:999px;background:#ffffff;color:#0f172a;text-decoration:none;font-size:15px;font-weight:800;">AX 컨설팅 알아보기</a></div></div>
+> **우리 회사 데이터, 정말 쓸 수 있는 상태입니까? 지금 진단해보세요.**
+> [매직에꼴 AX 컨설팅 알아보기 →](https://ax-inquiry-system.vercel.app/inquiry)
 
 ---
 
