@@ -31,7 +31,30 @@
       "Bash(py:*)",
       "Bash(PYTHONIOENCODING=utf-8 py -u .claude/skills/tavily-search/scripts/search.py --query \"Cloudera HBR 2026 only 7 percent enterprises data ready AI\" --mode factcheck --max_results 3)",
       "Bash(echo \"EXIT_CODE:$?\")",
-      "Bash(curl -s \"https://magicecole.vercel.app/blog/ai-data-readiness-checklist\")"
+      "Bash(curl -s \"https://magicecole.vercel.app/blog/ai-data-readiness-checklist\")",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(echo \"done $?\")",
+      "Bash(cargo:*)",
+      "Bash(rustc --version)",
+      "Bash(rustup --version)",
+      "Bash(winget --version)",
+      "Bash(winget search:*)",
+      "Bash(winget install:*)",
+      "Bash(export PATH=\"$PATH:/c/Users/MagicecoleGuest/.cargo/bin\")",
+      "Bash(cp:*)",
+      "Bash(rustup toolchain:*)",
+      "Bash(rustup default:*)",
+      "Read(//c/Users/MagicecoleGuest/.claude/**)",
+      "Bash(jq --version)",
+      "Bash(echo \"pass-through exit: $?\")",
+      "Bash(pip show:*)",
+      "Bash(echo \"EXIT_CODE=$?\")",
+      "Bash(echo \"---EXIT:$?---\")",
+      "Read(//tmp/**)",
+      "Bash(curl -s -X DELETE \"https://magicecole.vercel.app/api/blog/cmnmx9045000004jmj8gv81wg\")",
+      "Bash(curl -s -X DELETE \"https://magicecole.vercel.app/api/blog/cmnmx9aom000004l54n4xx1iv\")",
+      "Bash(wait)",
+      "Bash(rm:*)"
     ]
   }
 }

@@ -14,9 +14,16 @@ AX 블로그 어드민 API를 통한 블로그 포스트 자동 발행 스크립
     # 대표 글로 설정
     python publish_blog.py <post.md 파일 경로> --publish --featured
 
+    # 기존 글 수정 (슬러그로 자동 검색)
+    python publish_blog.py <post.md 파일 경로> --update
+
+    # 기존 글 수정 (ID 직접 지정)
+    python publish_blog.py <post.md 파일 경로> --update --id <post_id>
+
 블로그 API:
     POST   /api/blog           — 글 생성
     GET    /api/blog           — 글 목록 조회
+    PATCH  /api/blog/{id}      — 글 수정
     DELETE /api/blog/{id}      — 글 삭제
 """
 
@@ -195,9 +202,9 @@ INLINE_STYLES = {
     "td": "padding:13px 20px;border-bottom:1px solid #e5e7eb;color:#374151;font-size:14.5px;word-break:keep-all;",
     "td_even": "padding:13px 20px;border-bottom:1px solid #e5e7eb;color:#374151;font-size:14.5px;word-break:keep-all;background:#f8fafc;",
     "td_last": "padding:13px 20px;border-bottom:none;color:#374151;font-size:14.5px;word-break:keep-all;",
-    "cta_block": "background-color:#24446f;background:linear-gradient(135deg,#24446f 0%,#2f63dc 100%);color:#fff;padding:56px 28px 60px;margin:48px 0 32px;border-radius:24px;text-align:center;box-shadow:0 24px 48px rgba(37,99,235,0.18);",
-    "cta_strong": "color:#fff;font-size:22px;line-height:1.35;letter-spacing:-0.02em;display:block;margin-bottom:28px;",
-    "cta_copy": "margin:-8px auto 0;max-width:560px;color:#dbeafe;font-size:16px;line-height:1.7;",
+    "cta_block": "background-color:#24446f;background:linear-gradient(135deg,#24446f 0%,#2f63dc 100%);color:#fff;padding:56px 28px 60px;margin:48px 0 32px;border-radius:24px;text-align:center;box-shadow:0 24px 48px rgba(37,99,235,0.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;",
+    "cta_strong": "color:#fff;font-size:22px;line-height:1.35;letter-spacing:-0.02em;display:block;",
+    "cta_copy": "margin:0;max-width:560px;color:#dbeafe;font-size:16px;line-height:1.7;",
     "cta_a": "color:#1f3b67;background:#fff;padding:20px 32px;border-radius:16px;text-decoration:none;font-weight:800;font-size:16px;display:inline-flex;align-items:center;justify-content:center;min-width:280px;box-shadow:0 12px 28px rgba(15,23,42,0.16);",
 }
 
@@ -208,8 +215,8 @@ INLINE_STYLE_THEMES = {
         "blockquote_bg": "linear-gradient(135deg,#f5f3ff 0%,#ede9fe 100%)",
         "blockquote_border": "#8b5cf6",
         "blockquote_strong": "#5b21b6",
-        "cta_block": "background-color:#1e1b4b;background:linear-gradient(135deg,#1e1b4b 0%,#7c3aed 100%);color:#fff;padding:56px 28px 60px;margin:48px 0 32px;border-radius:24px;text-align:center;box-shadow:0 24px 48px rgba(124,58,237,0.18);",
-        "cta_copy": "margin:-8px auto 0;max-width:560px;color:#ddd6fe;font-size:16px;line-height:1.7;",
+        "cta_block": "background-color:#1e1b4b;background:linear-gradient(135deg,#1e1b4b 0%,#7c3aed 100%);color:#fff;padding:56px 28px 60px;margin:48px 0 32px;border-radius:24px;text-align:center;box-shadow:0 24px 48px rgba(124,58,237,0.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;",
+        "cta_copy": "margin:0;max-width:560px;color:#ddd6fe;font-size:16px;line-height:1.7;",
         "cta_a": "color:#4c1d95;background:#fff;padding:20px 32px;border-radius:16px;text-decoration:none;font-weight:800;font-size:16px;display:inline-flex;align-items:center;justify-content:center;min-width:280px;box-shadow:0 12px 28px rgba(15,23,42,0.16);",
     },
     "Thought Leadership": {
@@ -226,8 +233,8 @@ INLINE_STYLE_THEMES = {
         "blockquote_bg": "linear-gradient(135deg,#ecfdf5 0%,#d1fae5 100%)",
         "blockquote_border": "#34d399",
         "blockquote_strong": "#065f46",
-        "cta_block": "background-color:#064e3b;background:linear-gradient(135deg,#064e3b 0%,#059669 100%);color:#fff;padding:56px 28px 60px;margin:48px 0 32px;border-radius:24px;text-align:center;box-shadow:0 24px 48px rgba(5,150,105,0.18);",
-        "cta_copy": "margin:-8px auto 0;max-width:560px;color:#d1fae5;font-size:16px;line-height:1.7;",
+        "cta_block": "background-color:#064e3b;background:linear-gradient(135deg,#064e3b 0%,#059669 100%);color:#fff;padding:56px 28px 60px;margin:48px 0 32px;border-radius:24px;text-align:center;box-shadow:0 24px 48px rgba(5,150,105,0.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;",
+        "cta_copy": "margin:0;max-width:560px;color:#d1fae5;font-size:16px;line-height:1.7;",
         "cta_a": "color:#064e3b;background:#fff;padding:20px 32px;border-radius:16px;text-decoration:none;font-weight:800;font-size:16px;display:inline-flex;align-items:center;justify-content:center;min-width:280px;box-shadow:0 12px 28px rgba(15,23,42,0.16);",
     },
     "Company News": {
@@ -235,8 +242,8 @@ INLINE_STYLE_THEMES = {
         "blockquote_bg": "linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%)",
         "blockquote_border": "#fb923c",
         "blockquote_strong": "#c2410c",
-        "cta_block": "background-color:#7c2d12;background:linear-gradient(135deg,#7c2d12 0%,#ea580c 100%);color:#fff;padding:56px 28px 60px;margin:48px 0 32px;border-radius:24px;text-align:center;box-shadow:0 24px 48px rgba(234,88,12,0.18);",
-        "cta_copy": "margin:-8px auto 0;max-width:560px;color:#fed7aa;font-size:16px;line-height:1.7;",
+        "cta_block": "background-color:#7c2d12;background:linear-gradient(135deg,#7c2d12 0%,#ea580c 100%);color:#fff;padding:56px 28px 60px;margin:48px 0 32px;border-radius:24px;text-align:center;box-shadow:0 24px 48px rgba(234,88,12,0.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;",
+        "cta_copy": "margin:0;max-width:560px;color:#fed7aa;font-size:16px;line-height:1.7;",
         "cta_a": "color:#7c2d12;background:#fff;padding:20px 32px;border-radius:16px;text-decoration:none;font-weight:800;font-size:16px;display:inline-flex;align-items:center;justify-content:center;min-width:280px;box-shadow:0 12px 28px rgba(15,23,42,0.16);",
     },
 }
@@ -585,6 +592,50 @@ def create_blog_post(payload, blog_api_base):
         return None
 
 
+def get_blog_posts(blog_api_base):
+    """블로그 API에서 전체 글 목록을 가져온다."""
+    try:
+        resp = requests.get(blog_api_base, timeout=30)
+        if resp.status_code == 200:
+            return resp.json()
+    except requests.RequestException as e:
+        print(f"[실패] 글 목록 조회 실패: {e}")
+    return []
+
+
+def find_post_by_slug(slug, blog_api_base):
+    """슬러그로 글을 검색하여 ID를 반환한다."""
+    posts = get_blog_posts(blog_api_base)
+    items = posts if isinstance(posts, list) else posts.get("posts", posts.get("data", posts.get("items", [])))
+    for post in items:
+        if post.get("slug") == slug:
+            return post.get("id")
+    return None
+
+
+def update_blog_post(post_id, payload, blog_api_base):
+    """블로그 API에 PUT 요청으로 기존 글을 수정한다."""
+    url = f"{blog_api_base}/{post_id}"
+    try:
+        resp = requests.put(
+            url,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=30,
+        )
+    except requests.RequestException as e:
+        print(f"[실패] 블로그 API 요청 실패: {e}")
+        return None
+    if resp.status_code not in (200, 201):
+        print(f"[실패] 글 수정 실패 — HTTP {resp.status_code}")
+        print(f"  응답: {resp.text}")
+        return None
+    try:
+        return resp.json()
+    except ValueError:
+        return None
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="AX 블로그 어드민 API를 통한 블로그 포스트 발행"
@@ -605,6 +656,14 @@ def main():
     parser.add_argument(
         "--author", default="매직에꼴",
         help="저자명 (기본: 매직에꼴)",
+    )
+    parser.add_argument(
+        "--update", action="store_true",
+        help="기존 글 수정 (PATCH, 슬러그로 자동 검색)",
+    )
+    parser.add_argument(
+        "--id", metavar="POST_ID", dest="post_id",
+        help="수정할 글 ID (--update와 함께 사용, 미지정 시 슬러그로 자동 검색)",
     )
     args = parser.parse_args()
 
@@ -697,7 +756,12 @@ def main():
         "readingTime": reading_time,
     }
 
-    mode = "발행" if args.publish else "초안 저장"
+    if args.update:
+        mode = "수정"
+    elif args.publish:
+        mode = "발행"
+    else:
+        mode = "초안 저장"
     print(f"  카테고리: {category}")
     print(f"  슬러그: {slug}")
     print(f"  모드: {mode}")
@@ -708,14 +772,25 @@ def main():
     print()
 
     # API 호출
-    print(f"[1/1] 블로그 글 {'발행' if args.publish else '저장'} 중...")
-    result = create_blog_post(payload, blog_api_base)
+    if args.update:
+        target_id = args.post_id
+        if not target_id:
+            print(f"  슬러그 '{slug}'로 글 검색 중...")
+            target_id = find_post_by_slug(slug, blog_api_base)
+        if not target_id:
+            print(f"[실패] 수정할 글을 찾을 수 없습니다. --id 옵션으로 글 ID를 직접 지정하세요.")
+            sys.exit(1)
+        print(f"[1/1] 블로그 글 수정 중... (ID: {target_id})")
+        result = update_blog_post(target_id, payload, blog_api_base)
+    else:
+        print(f"[1/1] 블로그 글 {'발행' if args.publish else '저장'} 중...")
+        result = create_blog_post(payload, blog_api_base)
 
     if result:
-        post_id = result.get("id", "")
+        result_id = result.get("id", args.post_id or "")
         post_slug = result.get("slug", slug)
         print(f"\n[성공] 블로그 글이 {mode}되었습니다.")
-        print(f"  ID: {post_id}")
+        print(f"  ID: {result_id}")
         print(f"  URL: {blog_site_base}/blog/{post_slug}")
         print(f"  어드민: {blog_site_base}/admin/blog")
     else:
