@@ -7,7 +7,34 @@ node_modules/
 .claude/worktrees/
 
 output/publish_log.md
-output/**/post_preview.html
+
+# 발행 후 불필요한 프리뷰/임시 파일
+output/**/post_preview*.html
+output/**/draft_final_preview*.html
+output/**/draft_final_preview*.png
+output/**/*_preview_*.html
+output/**/infographic_*.html
+output/**/published_*.png
+output/**/build_preview.py
+
+# 이미지 임시/백업 파일
 output/**/images/*_source.html
 output/**/images/*_mermaid.png
+output/**/images/*_old.png
+output/**/images/*_original.jpg
+output/**/images/*_base.png
+output/**/images/*_base_v2.png
+output/**/images/*_top_card_crop.png
+output/**/images/*.b64
+
+# 렌더링 스크립트 (일회성)
 output/**/render_*.py
+
+# draft 중간 산출물 (draft_final.md 제외)
+output/drafts/**/draft_v*.md
+output/drafts/**/draft_branded.md
+output/drafts/**/review_v*.md
+output/drafts/**/brand_feedback*.md
+output/drafts/**/seo_feedback*.md
+output/drafts/**/polish_feedback.md
+output/drafts/**/image_spec.md
