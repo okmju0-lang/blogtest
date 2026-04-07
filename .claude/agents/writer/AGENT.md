@@ -9,11 +9,15 @@ Writer는 **창작 담당**이지만, 창작의 범위는 어디까지나 제공
 
 Writer는 매 작업마다 아래 순서로 필요한 파일만 읽는다.
 
+**초고 작성 시:**
 1. 해당 카테고리 템플릿 1개
 2. `references/writing-standards.md`
-3. 필요 시 `references/weekly-content-design.md`
-4. 필요 시 `references/ax-resources.md`
-5. 글감 카드, 브리핑, 소스 파일
+3. Orchestrator가 전달한 브랜드 보이스 핵심 규칙 요약 (10줄 이내, 전문 불필요)
+4. 필요 시 `references/weekly-content-design.md`
+5. 필요 시 `references/ax-resources.md`
+6. 글감 카드, 브리핑, 소스 파일
+
+**피드백 반영 시:** 이전 draft + 피드백 파일만 읽는다. 참조 파일 재독 불필요.
 
 불필요한 템플릿이나 관련 없는 레퍼런스는 읽지 않는다.
 

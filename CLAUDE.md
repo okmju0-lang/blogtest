@@ -146,7 +146,7 @@
 **단계 1 — 초고 작성** → **Writer 서브에이전트 호출**
 - 전달 전에 `output/variant_registry.md`를 확인하여 해당 카테고리의 직전 변형을 파악한다.
 - 전달: 글감 카드/브리핑 경로 + 소스 파일 경로 + 카테고리 코드 + **직전 변형 정보**
-- **컨텍스트 최소화 원칙**: Writer에는 해당 카테고리 템플릿 1개, `references/writing-standards.md`, 필요한 경우에만 `weekly-content-design.md` 또는 `ax-resources.md`를 함께 전달한다. 관련 없는 템플릿/레퍼런스는 넘기지 않는다.
+- **컨텍스트 최소화 원칙**: Writer에는 해당 카테고리 템플릿 1개, `references/writing-standards.md`, `/.claude/agents/brand-editor/references/brand-voice-guide.md`의 핵심 규칙 요약(전문 불필요, 10줄 이내)을 함께 전달한다. 필요한 경우에만 `weekly-content-design.md` 또는 `ax-resources.md`를 추가한다.
 - Writer가 해당 카테고리 템플릿(`/.claude/agents/writer/references/templates/`)을 참조하여 초고를 작성한다.
 - Writer는 직전 변형과 다른 변형을 우선 선택한다.
 - 출력: `output/drafts/{post_id}/draft_v1.md`
@@ -175,38 +175,29 @@
 - **기밀 지적 항목은 반드시 반영**. 미반영 시 즉시 에스컬레이션.
 - 출력: `output/drafts/{post_id}/draft_v{n+1}.md`
 
-**단계 4 — 브랜드 보이스 피드백** → **Brand Editor 서브에이전트 호출**
-- 전달: 현재 draft 파일 경로 + `/.claude/agents/brand-editor/references/brand-voice-guide.md` 경로
-- Brand Editor에는 draft와 brand guide만 전달한다. 예시 샘플이나 이전 단계 산출물은 필요 시에만 추가한다.
-- 출력: `output/drafts/{post_id}/brand_feedback.md`
+**단계 4 — 브랜드+SEO 통합 피드백** → **Brand Editor 서브에이전트 호출**
+- Brand Editor가 브랜드 보이스 + SEO 최적화를 **한 번에** 분석한다.
+- 전달: 현재 draft 파일 경로 + `/.claude/agents/brand-editor/references/brand-voice-guide.md` + `/.claude/agents/seo-specialist/references/seo-checklist.md` 경로
+- 출력: `output/drafts/{post_id}/polish_feedback.md`
+- 필수 포함: 브랜드 보이스 피드백 섹션 + SEO 피드백 섹션 (제목 최적화, 메타 디스크립션, 타겟 키워드, 헤딩 구조)
 
-**단계 5 — 브랜드 보이스 반영** → **Writer 서브에이전트 호출**
-- 전달: 현재 draft + brand_feedback.md 경로
-- 출력: `output/drafts/{post_id}/draft_branded.md`
-
-**단계 6 — SEO 최적화 피드백** → **SEO Specialist 서브에이전트 호출**
-- 전달: `draft_branded.md` 경로
-- SEO Specialist에는 `draft_branded.md`와 `seo-checklist.md`만 우선 전달한다.
-- 출력: `output/drafts/{post_id}/seo_feedback.md`
-- 필수 포함: 제목 최적화, 메타 디스크립션, 타겟 키워드, 헤딩 구조
-
-**단계 7 — SEO 반영 → 텍스트 최종본** → **Writer 서브에이전트 호출**
-- 전달: `draft_branded.md` + `seo_feedback.md` 경로
+**단계 5 — 브랜드+SEO 일괄 반영 → 텍스트 최종본** → **Writer 서브에이전트 호출**
+- 전달: 현재 draft + `polish_feedback.md` 경로
 - 출력: `output/drafts/{post_id}/draft_final.md`
-- LLM 자기 검증: SEO 반영 + 브랜드 보이스 훼손 없음 확인
+- Writer 자기 검증: 브랜드 보이스 + SEO 반영 확인
 
-**단계 7.5 — AI 슬롭 자동 검사** (Orchestrator가 직접 수행)
+**단계 5.5 — AI 슬롭 자동 검사** (Orchestrator가 직접 수행)
 - `python scripts/slop_checker.py output/drafts/{post_id}/draft_final.md` 실행
 - **PASS** (종료 코드 0): 단계 8로 진행
 - **WARNING** (종료 코드 1): 경고 항목을 Writer에게 전달하여 1회 수정 후 재검사. 재검사 후에도 WARNING이면 담당자에게 안내 후 진행
 - **FAIL** (종료 코드 2): critical 항목을 Writer에게 전달하여 필수 수정. 수정 후 재검사에서 critical 0건이 되어야 단계 8 진행
 
-**단계 8 — 이미지 생성** (Orchestrator가 직접 수행)
+**단계 6 — 이미지 생성** (Orchestrator가 직접 수행)
 
 Nano Banana 2 (`gemini-3.1-flash-image-preview`) API를 사용하여 포스트당 정확히 3장의 이미지를 생성한다.
 API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고, 프롬프트 작성 등 텍스트 분석은 LLM이 직접 수행한다.
 
-8a. **핵심 내용 추출 + 프롬프트 작성** (LLM이 직접 수행, API 호출 없음)
+6a. **핵심 내용 추출 + 프롬프트 작성** (LLM이 직접 수행, API 호출 없음)
 - `draft_final.md`를 읽고 다음을 도출한다:
   - **핵심 내용 1**: 글에서 가장 중요한 포인트/인사이트 (일러스트 1용)
   - **핵심 내용 2**: 두 번째로 중요한 포인트/인사이트 (일러스트 2용)
@@ -217,7 +208,7 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
   - **본문 이미지**: 글에 비교 데이터/프로세스 흐름/통계 수치/분류 체계가 있으면 → **인포그래픽** 프롬프트 (텍스트 허용, 한글 우선). 없으면 → 일반 일러스트 (`no text` 포함).
 - 인포그래픽 프롬프트 시 `scripts/style_prompts.py`의 스타일 프리픽스 활용 가능.
 
-8b. **이미지 생성** (API 호출 3회)
+6b. **이미지 생성** (API 호출 3회)
 - `image-generator` 스킬의 `generate_image.py`를 batch 모드로 실행한다.
 - 실행 명령:
   ```
@@ -232,65 +223,69 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
   - `output/drafts/{post_id}/images/illustration_1.png` (4:3)
   - `output/drafts/{post_id}/images/illustration_2.png` (4:3)
 
-8b-1. **텍스트 검증** (필수, 생성 직후)
+6b-1. **텍스트 검증** (필수, 생성 직후)
 - 생성된 이미지 3장을 Read로 열어 시각적으로 확인한다.
 - 텍스트 포함 이미지: 글자 깨짐, 오타, 잘림, 중복, 의미 불일치 확인.
 - 텍스트 없는 이미지: 의도치 않은 텍스트 삽입 여부 확인.
 - 이상 발견 시: 수정 프롬프트로 해당 이미지만 재생성 (이미지당 최대 2회).
 
-8c. **이미지 삽입**
+6c. **이미지 삽입**
 - `thumbnail.png`를 frontmatter `thumbnail` 속성에 연결한다.
 - `illustration_1.png`를 핵심 내용 1이 서술된 본문 위치(H2/H3 섹션 뒤)에 삽입한다.
 - `illustration_2.png`를 핵심 내용 2가 서술된 본문 위치에 삽입한다.
 - 삽입 형식: `![{핵심 내용 설명}](images/{filename}.png)`
 
-8d. **다이어그램 생성** (선택, 카테고리에 따라)
+6d. **다이어그램 생성** (선택, 카테고리에 따라)
 - LLM이 Mermaid 코드를 작성하고 `diagram-renderer` 스킬로 문법 검증 + 렌더링.
 - 출력: `output/drafts/{post_id}/images/{diagram_id}.mmd` + `.png`
 - 파싱 오류 시 1회 재시도.
 
-**단계 8.5 — 담당자 검토** (**Human-in-the-loop**)
+**단계 6.5 — 담당자 검토** (**Human-in-the-loop**)
 - 텍스트 최종본 경로 + 생성된 이미지 경로를 담당자에게 안내한다.
 - 담당자 승인 또는 수정 요구사항을 기다린다.
 
-**단계 9 — 담당자 피드백 최종 반영** → **Writer 서브에이전트 호출** + 필요 시 이미지 재생성
+**단계 7 — 담당자 피드백 최종 반영** → **Writer 서브에이전트 호출** + 필요 시 이미지 재생성
 - 출력: `output/posts/{post_id}/post.md` + `output/posts/{post_id}/images/`
 - `output/variant_registry.md`에 해당 포스트의 카테고리 + 변형을 기록한다.
 
-**단계 10 — 비주얼 강화** → **Visual Editor 서브에이전트 호출**
+**단계 8 — 비주얼 강화** → **Visual Editor 서브에이전트 호출** (**선택, 요청 시에만**)
+
+> **기본값: 스킵.** 사용자가 "비주얼 강화", "스크린샷 추가" 등을 명시적으로 요청할 때만 실행한다.
+> AI Trend / Thought Leadership처럼 외부 서비스 언급이 많은 글, 또는 다이어그램 개선이 필요한 글에 권장.
+
 - 전달: `output/posts/{post_id}/post.md` 경로 + `output/posts/{post_id}/images/` 경로 + 카테고리 코드
 - Visual Editor에는 `post.md`, `images/`, `visual-guide.md`를 우선 전달한다. 웹 검색이나 추가 참조는 보강 대상이 있을 때만 사용한다.
 - Visual Editor가 수행하는 작업:
 
-  10a. **웹 스크린샷 캡처**
+  8a. **웹 스크린샷 캡처**
   - 본문에 언급된 외부 서비스/도구의 공식 페이지를 스크린샷한다.
   - 언급 URL이 없으면 본문 키워드로 웹 검색하여 관련 공개 페이지를 찾아 캡처한다.
   - `/.claude/agents/visual-editor/scripts/capture_screenshot.py` 실행.
   - 출력: `output/posts/{post_id}/images/screenshot_{n}.png`
   - 반드시 출처 URL을 캡션으로 명시한다.
 
-  10b. **다이어그램 전문화**
+  8b. **다이어그램 전문화**
   - 기존 `.mmd` 파일의 스타일을 카테고리별 컬러 팔레트로 통일하고 전문적으로 개선한다.
   - `/.claude/agents/visual-editor/scripts/enhance_diagram.py`로 스타일 강화 후 `diagram-renderer` 스킬로 재렌더링.
   - 출력: 기존 다이어그램 파일 교체 (원본 `.mmd`는 `_original` 접미사로 백업)
 
-  10c. **post.md 갱신**
+  8c. **post.md 갱신**
   - 생성된 이미지/스크린샷을 적절한 위치에 마크다운으로 삽입한다.
   - 본문 텍스트 내용은 변경하지 않는다. 이미지 삽입 마크다운만 추가한다.
 
 - 출력: `output/posts/{post_id}/visual_report.md` (비주얼 편집 요약)
 
-**단계 11 — 블로그 발행** (Orchestrator가 직접 수행)
+**단계 9 — 블로그 발행** (Orchestrator가 직접 수행)
 
-단계 10 완료 후, 발행 전에 반드시 프리뷰를 생성하고 담당자에게 검토를 요청한다. (**Human-in-the-loop**)
+단계 7 완료 후 (또는 단계 8 완료 후, 비주얼 강화를 실행한 경우), 발행 전에 반드시 프리뷰를 생성하고 담당자에게 검토를 요청한다. (**Human-in-the-loop**)
 
-**11-0. 프리뷰 생성 (발행 전 필수)**
+**9-0. 프리뷰 생성 (발행 전 필수)**
 - `python preview_blog.py output/posts/{post_id}/post.md` 실행
 - 출력: `output/posts/{post_id}/post_preview.html`
 - 담당자에게 프리뷰 파일 경로를 안내하고, 브라우저로 열어 확인 후 발행 여부를 결정해달라고 요청한다.
 - 프리뷰 확인 없이 발행 진행 금지.
 
-**11-1. 발행 실행**
+**9-1. 발행 실행**
 - `publish_blog.py` 스크립트를 실행한다.
 - 초안 저장: `python publish_blog.py output/posts/{post_id}/post.md`
 - 즉시 발행: `python publish_blog.py output/posts/{post_id}/post.md --publish`
@@ -308,12 +303,11 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 
 ### 병렬 처리 규칙 (워크플로우 2)
 
-- **단계 4 + 6**: 브랜드 보이스 피드백과 SEO 피드백은 **순차 실행**. SEO가 브랜드 반영본을 기준으로 분석해야 한다.
-- **단계 8b + 8d**: 이미지 생성(API 3회)과 다이어그램 생성은 **병렬 실행** 가능.
-- **단계 8 전체**: 텍스트 최종본(단계 7)이 확정된 후에만 시작한다.
-- **단계 10a + 10b**: 스크린샷 캡처와 다이어그램 전문화는 **병렬 실행** 가능.
-- **단계 10c**: 10a, 10b 모두 완료 후 **순차 실행**.
-- **단계 11**: 단계 10 완료 후 **순차 실행**. 담당자 승인 필요.
+- **단계 6b + 6d**: 이미지 생성(API 3회)과 다이어그램 생성은 **병렬 실행** 가능.
+- **단계 6 전체**: 텍스트 최종본(단계 5)이 확정된 후에만 시작한다.
+- **단계 8a + 8b**: 스크린샷 캡처와 다이어그램 전문화는 **병렬 실행** 가능 (Visual Editor 실행 시).
+- **단계 8c**: 8a, 8b 모두 완료 후 **순차 실행**.
+- **단계 9**: 단계 7 완료 후 (비주얼 강화 요청 시 단계 8 완료 후) **순차 실행**. 담당자 승인 필요.
 
 ---
 
@@ -359,16 +353,15 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 
 비용 대비 품질 최적화를 위해 에이전트별로 모델을 분리한다. Agent 호출 시 `model` 파라미터로 지정한다.
 
-- **Opus** (판단·검증 중심): Orchestrator (기본), Reviewer
-- **Sonnet** (생성·정형 작업 중심): Writer, Brand Editor, SEO Specialist, Visual Editor
+- **Opus** (판단·검증 중심): Reviewer
+- **Sonnet** (생성·정형 작업 중심): Writer, Brand Editor, Visual Editor
 
 | 에이전트 | 모델 | 호출 시점 | 전달 방식 |
 |---|---|---|---|
 | Writer | **sonnet** | 초고 작성, 피드백 반영 수정, 최종본 생성 | 파일 경로 + 카테고리 코드 |
 | Reviewer | **opus** | 초고/수정본 검토 필요 시 | 파일 경로 (draft + 브리핑) |
-| Brand Editor | **sonnet** | Reviewer 루프 통과 후 | 파일 경로 (draft + 브랜드 가이드) |
-| SEO Specialist | **sonnet** | Brand Editor 피드백 반영 완료 후 | 파일 경로 (branded draft) |
-| Visual Editor | **sonnet** | 담당자 피드백 반영 완료 후 (단계 10) | 파일 경로 (post.md + images/) + 카테고리 코드 |
+| Brand Editor | **sonnet** | Reviewer 루프 통과 후 (브랜드+SEO 통합 피드백) | 파일 경로 (draft + brand guide + seo checklist) |
+| Visual Editor | **sonnet** | 사용자 명시적 요청 시만 (단계 8) | 파일 경로 (post.md + images/) + 카테고리 코드 |
 
 ---
 
@@ -382,12 +375,12 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 | `file-manager` | 파일 저장이 필요할 때 | Orchestrator, Writer |
 | `tavily-search` | 주제 리서치 (워크플로우 1 단계 0.7) 또는 Reviewer 팩트체크 시 | Orchestrator, Reviewer |
 | `pii-detector` | Reviewer 기밀 필터링 수행 시 | Reviewer |
-| `image-generator` (generate_image.py) | 단계 8: 텍스트 최종본 확정 후 이미지 3장 생성 | Orchestrator |
-| `diagram-renderer` | 단계 8d: Mermaid 다이어그램 렌더링 | Orchestrator |
+| `image-generator` (generate_image.py) | 단계 6: 텍스트 최종본 확정 후 이미지 3장 생성 | Orchestrator |
+| `diagram-renderer` | 단계 6d: Mermaid 다이어그램 렌더링 | Orchestrator |
 | `schema-validator` | 각 단계 산출물 생성 직후 | Orchestrator |
-| `preview_blog.py` | 단계 11-0: 발행 전 프리뷰 생성 (필수) | Orchestrator |
-| `publish_blog.py` | 단계 11-1: 블로그 발행 실행 시 | Orchestrator |
-| `scripts/slop_checker.py` | 단계 7.5: 텍스트 최종본 AI 슬롭 자동 검사 | Orchestrator |
+| `preview_blog.py` | 단계 9-0: 발행 전 프리뷰 생성 (필수) | Orchestrator |
+| `publish_blog.py` | 단계 9-1: 블로그 발행 실행 시 | Orchestrator |
+| `scripts/slop_checker.py` | 단계 5.5: 텍스트 최종본 AI 슬롭 자동 검사 | Orchestrator |
 | `scripts/publish_tracker.py check` | 단계 3: 글감 중복 검사 / 신규 글 작성 전 | Orchestrator |
 | `scripts/publish_tracker.py log` | 단계 11: 발행 완료 후 이력 기록 | Orchestrator |
 | `scripts/publish_tracker.py stats` | 발행 현황 조회 요청 시 | Orchestrator |
@@ -404,14 +397,13 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 | 글감 제안 (3) | 제목+앵글+카테고리+소스+논점 필드 완비 | 1회 재시도 |
 | 초고 (1/Writer) | 템플릿 구조 + 핵심 논점 + 최소 1,500자 | 1회 재시도 |
 | 리뷰 (2/Reviewer) | 피드백 + 팩트체크 출처 + 기밀 필터링 섹션 | Tavily 오류: 2회 재시도 후 스킵 + 로그 |
-| 브랜드 피드백 (4) | 가이드 항목 참조 포함 | 1회 재시도 |
-| SEO 피드백 (6) | 제목/메타/키워드/헤딩 항목 포함 | 1회 재시도 |
-| 핵심 내용 추출 + 프롬프트 (8a) | 핵심 내용 2가지 + 프롬프트 3개 작성 완료 | LLM 직접 수행 (API 없음) |
-| 이미지 생성 (8b) | 3장 모두 파일 존재 + 각 10KB 이상 | 이미지당 2회 재시도. API 키 오류 시 즉시 중단 |
-| 텍스트 검증 (8b-1) | 텍스트 깨짐/오타/잘림/중복 없음 | 수정 프롬프트로 재생성 (이미지당 최대 2회) |
-| 스크린샷 캡처 (10a) | 파일 존재 + 캡처 성공 | 대체 URL 1회 시도 후 스킵 |
-| 다이어그램 전문화 (10b) | 렌더링 성공 | 실패 시 기존 다이어그램 유지 |
-| AI 슬롭 검사 (7.5) | `slop_checker.py` 종료 코드 0 (PASS) | FAIL: Writer 수정 후 재검사. WARNING: 1회 수정 시도 후 담당자 안내 |
+| 브랜드+SEO 통합 피드백 (4) | 브랜드 섹션 + SEO 섹션 모두 포함 | 1회 재시도 |
+| 핵심 내용 추출 + 프롬프트 (6a) | 핵심 내용 2가지 + 프롬프트 3개 작성 완료 | LLM 직접 수행 (API 없음) |
+| 이미지 생성 (6b) | 3장 모두 파일 존재 + 각 10KB 이상 | 이미지당 2회 재시도. API 키 오류 시 즉시 중단 |
+| 텍스트 검증 (6b-1) | 텍스트 깨짐/오타/잘림/중복 없음 | 수정 프롬프트로 재생성 (이미지당 최대 2회) |
+| 스크린샷 캡처 (8a) | 파일 존재 + 캡처 성공 | 대체 URL 1회 시도 후 스킵 |
+| 다이어그램 전문화 (8b) | 렌더링 성공 | 실패 시 기존 다이어그램 유지 |
+| AI 슬롭 검사 (5.5) | `slop_checker.py` 종료 코드 0 (PASS) | FAIL: Writer 수정 후 재검사. WARNING: 1회 수정 시도 후 담당자 안내 |
 | 중복 검사 (3) | `publish_tracker.py check` HIGH 유사도 0건 | HIGH: 해당 글감 제외 또는 앵글 차별화. MEDIUM: 사용자에게 안내 |
 | 블로그 발행 (11a) | HTTP 200 응답 + 글 ID 반환 | 1회 재시도 후 에스컬레이션. 슬러그 중복 시 슬러그 수정 후 재시도 |
 | 발행 이력 기록 (11) | `publish_tracker.py log` 정상 실행 | 실패 시 수동 기록 안내 |
@@ -446,9 +438,7 @@ Reviewer가 단계 2에서 기밀 필터링을 수행한다.
 | 글감 카드 | `output/story-ideas/idea_{YYYYMMDD}_{n}.md` |
 | 초고/수정본 | `output/drafts/{post_id}/draft_v{n}.md` |
 | 리뷰 | `output/drafts/{post_id}/review_v{n}.md` |
-| 브랜드 피드백 | `output/drafts/{post_id}/brand_feedback.md` |
-| 브랜드 반영본 | `output/drafts/{post_id}/draft_branded.md` |
-| SEO 피드백 | `output/drafts/{post_id}/seo_feedback.md` |
+| 브랜드+SEO 통합 피드백 | `output/drafts/{post_id}/polish_feedback.md` |
 | 텍스트 최종본 | `output/drafts/{post_id}/draft_final.md` |
 | 썸네일 | `output/drafts/{post_id}/images/thumbnail.png` |
 | 일러스트 1 | `output/drafts/{post_id}/images/illustration_1.png` |
@@ -645,13 +635,11 @@ Brand Editor가 `brand-voice-guide.md` 부재를 보고하면 Orchestrator가 �
 | `draft_v1.md`만 존재 | 단계 1 (초고) | 단계 2 (Reviewer 호출) |
 | `review_v{n}.md` 존재 + critical/confidential > 0 | 단계 2 (리뷰) | 단계 3 (Writer 수정) |
 | `review_v{n}.md` 존재 + critical/confidential = 0 | 단계 2 (리뷰 통과) | 단계 4 (Brand Editor) |
-| `brand_feedback.md` 존재 | 단계 4 (브랜드 피드백) | 단계 5 (Writer 브랜드 반영) |
-| `draft_branded.md` 존재 | 단계 5 (브랜드 반영) | 단계 6 (SEO Specialist) |
-| `seo_feedback.md` 존재 | 단계 6 (SEO 피드백) | 단계 7 (Writer SEO 반영) |
-| `draft_final.md` 존재 | 단계 7 (텍스트 최종) | 단계 8 (이미지 생성) |
-| `images/thumbnail.png` + `images/illustration_*.png` 존재 | 단계 8 (이미지 완료) | 단계 8.5 (담당자 검토) |
-| `output/posts/{post_id}/post.md` 존재 + `visual_report.md` 미존재 | 단계 9 (피드백 반영 완료) | 단계 10 (Visual Editor) |
-| `visual_report.md` 존재 | 단계 10 (비주얼 강화 완료) | 단계 11 (발행 채널 선택) |
+| `polish_feedback.md` 존재 | 단계 4 (브랜드+SEO 피드백) | 단계 5 (Writer 일괄 반영) |
+| `draft_final.md` 존재 | 단계 5 (텍스트 최종) | 단계 6 (이미지 생성) |
+| `images/thumbnail.png` + `images/illustration_*.png` 존재 | 단계 6 (이미지 완료) | 단계 6.5 (담당자 검토) |
+| `output/posts/{post_id}/post.md` 존재 | 단계 7 (피드백 반영 완료) | 단계 9 (발행) 또는 단계 8 (비주얼, 요청 시) |
+| `visual_report.md` 존재 | 단계 8 (비주얼 강화 완료) | 단계 9 (발행) |
 
 2. **사용자에게 확인**: 파악한 진행 상태를 안내하고 재개 여부를 묻는다.
 3. **이전 산출물 활용**: 이미 생성된 파일은 재생성하지 않고 그대로 사용한다.
@@ -691,7 +679,7 @@ Orchestrator는 각 단계를 종료하고 다음 단계로 넘어가기 전에 
 - [ ] 현재 루프 횟수를 확인했는가? (2회 초과 시 에스컬레이션)
 - [ ] `confidential` 항목에 "불명확" 판정이 있는지 확인했는가? (있으면 에스컬레이션)
 
-### 최종 발행 전환 시 (단계 9 완료)
+### 최종 발행 전환 시 (단계 7 완료)
 
 - [ ] 담당자 승인을 받았는가? (Human-in-the-loop 완료)
 - [ ] 이미지 3장(thumbnail.png, illustration_1.png, illustration_2.png)이 `output/posts/{post_id}/images/`에 복사되었는가?
@@ -700,7 +688,7 @@ Orchestrator는 각 단계를 종료하고 다음 단계로 넘어가기 전에 
 - [ ] Visual Editor 단계(단계 10)가 완료되었는가? (`visual_report.md` 존재)
 - [ ] 스크린샷에 출처 캡션이 모두 포함되어 있는가?
 
-### 블로그 발행 시 (단계 11)
+### 블로그 발행 시 (단계 9)
 
 - [ ] `preview_blog.py`로 프리뷰를 생성했는가? (`post_preview.html` 존재)
 - [ ] 담당자가 프리뷰를 확인하고 발행을 승인했는가?
