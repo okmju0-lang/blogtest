@@ -161,6 +161,71 @@ SLOP_RULES: list[SlopPattern] = [
         description="A뿐만 아니라 B도 — 반복 병렬 구조",
         max_allowed=2,
     ),
+
+    # ── 9. 구체성 없는 형용사/부사 (warning) ──
+    SlopPattern(
+        name="vague_modifier",
+        patterns=[
+            r"다양한\s",
+            r"효과적으로",
+            r"체계적으로",
+            r"실질적인",
+            r"효율적으로",
+            r"전반적으로",
+            r"포괄적으로",
+        ],
+        severity="warning",
+        category="형용사/부사",
+        description="구체적 근거 없이 붙이는 모호한 수식어",
+        max_allowed=2,
+    ),
+
+    # ── 10. AI 연결 클리셰 (warning) ──
+    SlopPattern(
+        name="ai_connector",
+        patterns=[
+            r"이를\s*통해",
+            r"이에\s*따라",
+            r"이러한\s*맥락에서",
+            r"무엇보다도",
+            r"특히\s*주목할",
+            r"바로\s*이\s*지점",
+        ],
+        severity="warning",
+        category="연결어",
+        description="AI가 남발하는 연결 표현",
+        max_allowed=1,
+    ),
+
+    # ── 11. 회피적 표현 (warning) ──
+    SlopPattern(
+        name="evasive_expression",
+        patterns=[
+            r"라고\s*할\s*수\s*있습니다",
+            r"라고\s*볼\s*수\s*있습니다",
+            r"필요가\s*있습니다",
+            r"이해가\s*필요합니다",
+            r"함께\s*살펴보겠습니다",
+        ],
+        severity="warning",
+        category="어조",
+        description="판단을 회피하거나 독자를 끌어들이는 AI 표현",
+        max_allowed=1,
+    ),
+
+    # ── 12. 시대/패러다임 클리셰 (critical) ──
+    SlopPattern(
+        name="era_cliche",
+        patterns=[
+            r"AI\s*시대",
+            r"디지털\s*전환\s*시대",
+            r"패러다임\s*(전환|변화|쉬프트)",
+            r"뉴노멀",
+        ],
+        severity="critical",
+        category="클리셰",
+        description="진부한 시대/패러다임 표현",
+    ),
 ]
 
 

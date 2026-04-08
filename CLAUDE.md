@@ -169,7 +169,7 @@
 - `review_v{n}.md`에서 `critical` 태그 카운트 + `confidential` 태그 카운트를 확인한다.
 - 0건이면 → 단계 4로 진행
 - 1건 이상이면 → 단계 3 (Writer 수정)
-- 루프 2회 후 잔존 critical/confidential → **에스컬레이션**: 담당자에게 즉시 보고
+- 단계 3(Writer 수정)은 최대 2회까지 반복. 2회 후에도 critical/confidential 잔존 시 → **에스컬레이션**: 담당자에게 즉시 보고
 
 **단계 3 — 피드백 반영 수정** → **Writer 서브에이전트 호출**
 - 전달: 이전 버전 경로 + 리뷰 파일 경로
@@ -191,7 +191,7 @@
 - `python scripts/slop_checker.py output/drafts/{post_id}/draft_final.md` 실행
 - **PASS** (종료 코드 0): 단계 6으로 진행
 - **WARNING** (종료 코드 1): 경고 항목을 Writer에게 전달하여 1회 수정 후 재검사. 재검사 후에도 WARNING이면 담당자에게 안내 후 진행
-- **FAIL** (종료 코드 2): critical 항목을 Writer에게 전달하여 필수 수정. 수정 후 재검사에서 critical 0건이 되어야 단계 8 진행
+- **FAIL** (종료 코드 2): critical 항목을 Writer에게 전달하여 필수 수정. 수정 후 재검사에서 critical 0건이 되어야 단계 6 진행
 
 **단계 6 — 이미지 생성** (Orchestrator가 직접 수행)
 

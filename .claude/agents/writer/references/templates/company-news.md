@@ -17,6 +17,7 @@ category: company-news
 version: {버전}
 created_at: {YYYY-MM-DD HH:MM}
 meta_description: {150자 이내. 5W1H 핵심 요소 포함}
+variant: {A | B | C}
 source_refs:
   - {소스 파일 경로}
 ---
@@ -56,7 +57,7 @@ source_refs:
 - 긴박감/공감/매직에꼴 연결을 자연스럽게 녹인다.}
 
 > **{짧은 질문형 CTA — 1줄}**
-> [매직에꼴 AX 컨설팅 알아보기 →](https://ax-inquiry-system.vercel.app/inquiry)
+> [매직에꼴 AX 컨설팅 알아보기 ->](https://ax-inquiry-system.vercel.app/inquiry)
 
 ---
 

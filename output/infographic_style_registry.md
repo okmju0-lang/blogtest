@@ -25,4 +25,4 @@
 | post_20260326_4 | `corporate` | 2026-03-26 |
 | post_20260406_2 | `graphic-recording` | 2026-04-06 |
 | post_20260406_3 | `modern` | 2026-04-06 |
-| post_20260408_1 | `corporate` + `modern` (혼용, 비준수) | 2026-04-08 |
+| post_20260408_1 | `corporate` | 2026-04-08 |

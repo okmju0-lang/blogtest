@@ -56,6 +56,7 @@ category: thought-leadership
 version: {버전}
 created_at: {YYYY-MM-DD HH:MM}
 meta_description: {150자 이내. 문제와 해결 방향 모두 포함}
+variant: {A | B | C}
 source_refs:
   - {소스 파일 경로}
 ---
@@ -135,6 +136,7 @@ category: thought-leadership
 version: {버전}
 created_at: {YYYY-MM-DD HH:MM}
 meta_description: {150자 이내}
+variant: {A | B | C}
 source_refs:
   - {소스 파일 경로}
 ---
@@ -206,6 +208,7 @@ category: thought-leadership
 version: {버전}
 created_at: {YYYY-MM-DD HH:MM}
 meta_description: {150자 이내}
+variant: {A | B | C}
 source_refs:
   - {소스 파일 경로}
 ---
