@@ -1,6 +1,6 @@
 ---
 post_id: post_20260408_1
-title: AI 에이전트를 연결하기 전에, 어디에 연결할지 정했나요?
+title: AI에 예산을 써도 성과가 없는 진짜 이유
 category: thought-leadership
 version: final
 variant: B
@@ -18,7 +18,7 @@ source_refs:
   - output/summaries/web_aipedia_data_silo.md
 ---
 
-# AI 에이전트를 연결하기 전에, 어디에 연결할지 정했나요?
+# AI에 예산을 써도 성과가 없는 진짜 이유
 
 어느 팀이 생성형 AI 파일럿을 6개월째 돌리고 있었습니다.
 
