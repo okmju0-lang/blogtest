@@ -155,6 +155,7 @@ source_refs:
 ---
 
 > **{질문형 CTA}**
+> {한 줄 부연 설명 — 글 주제와 연결된 매직에꼴 역할 서술. 필수, 생략 금지}
 > [매직에꼴 AX 컨설팅 알아보기 ->](https://ax-inquiry-system.vercel.app/inquiry)
 
 ---
@@ -246,6 +247,7 @@ source_refs:
 ---
 
 > **{질문형 CTA}**
+> {한 줄 부연 설명 — 글 주제와 연결된 매직에꼴 역할 서술. 필수, 생략 금지}
 > [매직에꼴 AX 컨설팅 알아보기 ->](https://ax-inquiry-system.vercel.app/inquiry)
 
 ---
@@ -318,6 +320,7 @@ source_refs:
 매직에꼴 연결.}
 
 > **{질문형 CTA}**
+> {한 줄 부연 설명 — 글 주제와 연결된 매직에꼴 역할 서술. 필수, 생략 금지}
 > [매직에꼴 AX 컨설팅 알아보기 ->](https://ax-inquiry-system.vercel.app/inquiry)
 
 ---

@@ -115,6 +115,7 @@ source_refs:
 ---
 
 > **{짧은 질문형 CTA — 1줄}**
+> {한 줄 부연 설명 — 글 주제와 연결된 매직에꼴 역할 서술. 필수, 생략 금지}
 > [매직에꼴 AX 컨설팅 알아보기 ->](https://ax-inquiry-system.vercel.app/inquiry)
 
 ---
@@ -203,6 +204,7 @@ source_refs:
 "PoC 단계인가요, 확산 단계인가요?" 같은 톤.}
 
 > **{짧은 질문형 CTA — 1줄}**
+> {한 줄 부연 설명 — 글 주제와 연결된 매직에꼴 역할 서술. 필수, 생략 금지}
 > [매직에꼴 AX 컨설팅 알아보기 ->](https://ax-inquiry-system.vercel.app/inquiry)
 
 ---
