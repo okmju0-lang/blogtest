@@ -54,7 +54,24 @@
       "Bash(curl -s -X DELETE \"https://magicecole.vercel.app/api/blog/cmnmx9045000004jmj8gv81wg\")",
       "Bash(curl -s -X DELETE \"https://magicecole.vercel.app/api/blog/cmnmx9aom000004l54n4xx1iv\")",
       "Bash(wait)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(echo \"---EXIT: $?\")",
+      "Bash(mkdir -p \"C:/Users/MagicecoleGuest/Desktop/김진수/블로그 작성/.claude/skills/image-generator/templates\")",
+      "Bash(cp \"C:/Users/MagicecoleGuest/Desktop/김진수/magicecole_thumbnail_prompts.txt\" \"C:/Users/MagicecoleGuest/Desktop/김진수/블로그 작성/.claude/skills/image-generator/references/thumbnail-prompts.txt\")",
+      "Bash(rm -f \"/c/Users/MagicecoleGuest/Desktop/김진수/블로그 작성/.claude/skills/image-generator/scripts/compose_thumbnail.py\")",
+      "Bash(rm -f \"/c/Users/MagicecoleGuest/Desktop/김진수/블로그 작성/.claude/skills/image-generator/references/thumbnail-prompts.txt\")",
+      "Bash(rm -f \"/c/Users/MagicecoleGuest/Desktop/김진수/블로그 작성/thumbnail_002.png\")",
+      "Bash(rm -rf \"/c/Users/MagicecoleGuest/Desktop/김진수/블로그 작성/.claude/skills/image-generator/templates/\")",
+      "Bash(find . -not -path './.git/*' -not -path './.claude/worktrees/*' -name '__pycache__' -type d -exec rm -rf {} +)",
+      "Bash(rm -f output/posts/post_20260406_3/images/thumbnail_v2.png output/posts/post_20260406_3/images/thumbnail_v3.png output/posts/post_20260406_3/images/thumbnail_v4.png output/posts/post_20260406_3/images/object_v1.png)",
+      "Bash(rm -f output/posts/post_20260401_1/post_preview.html output/posts/post_20260406_2/post_preview.html output/posts/post_20260406_3/post_preview.html output/posts/post_20260408_1/post_preview.html)",
+      "Bash(rm -f output/posts/post_20260330_1/render_diagram_1.py output/posts/post_20260330_1/render_illustration_2.py output/posts/post_20260330_1/images/diagram_1_source.html output/posts/post_20260330_1/images/illustration_2_source.html)",
+      "Bash(python3 .claude/skills/image-generator/scripts/generate_image.py --help)",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('./.claude/skills/image-generator/scripts/generate_image.py'\\).read\\(\\)\\)\")",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('./.claude/skills/file-manager/scripts/manage_files.py'\\).read\\(\\)\\)\")",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('scripts/slop_checker.py'\\).read\\(\\)\\)\")",
+      "Bash(python3 ./.claude/skills/image-generator/scripts/generate_image.py)",
+      "Bash(python3 -c \"import sys; sys.path.insert\\(0, '.'\\); from pathlib import Path; Path\\('./.claude/skills/image-generator/scripts/generate_image.py'\\).read_text\\(\\)[:100]\")"
     ]
   }
 }

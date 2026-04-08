@@ -81,11 +81,11 @@ def md_to_html(md_text):
         in_quote = False
         quote_lines = []
         for line in lines:
-            if line.startswith("> "):
+            if line.startswith("> ") or line.startswith(">") and len(line) > 1 and not line.startswith(">>"):
                 if not in_quote:
                     in_quote = True
                     quote_lines = []
-                quote_lines.append(line[2:])
+                quote_lines.append(line[2:] if line.startswith("> ") else line[1:])
             else:
                 if in_quote:
                     content = "<br>\n".join(quote_lines)
@@ -249,22 +249,112 @@ INLINE_STYLE_THEMES = {
 }
 
 
-def get_inline_styles(category):
+# 인포그래픽 스타일별 강조 박스 테마 (3가지 디자인)
+# design: "gradient" | "frame" | "accent"
+INFOGRAPHIC_BOX_THEMES = {
+    "modern": {
+        "design": "gradient",
+        "color": "#4361EE",
+        "bg_light": "#eef0fd",
+        "bg_medium": "#dde1fb",
+        "strong": "#2b48d4",
+    },
+    "bold-data": {
+        "design": "gradient",
+        "color": "#00B4D8",
+        "bg_light": "#e6f8fc",
+        "bg_medium": "#cdf0f8",
+        "strong": "#007a94",
+    },
+    "corporate": {
+        "design": "frame",
+        "color": "#1B2A4A",
+        "border_accent": "#C9A84C",
+        "bg_light": "#faf8f2",
+        "strong": "#1B2A4A",
+    },
+    "graphic-recording": {
+        "design": "frame",
+        "color": "#8a6200",
+        "border_accent": "#F2B705",
+        "bg_light": "#fffbea",
+        "strong": "#7a5500",
+    },
+    "editorial": {
+        "design": "accent",
+        "color": "#C1440E",
+        "bg_light": "#fdf7f4",
+        "strong": "#9a3209",
+    },
+    "minimal": {
+        "design": "accent",
+        "color": "#4B5563",
+        "bg_light": "#f9fafb",
+        "strong": "#1f2937",
+    },
+}
+
+
+def _blockquote_css(infographic_style):
+    """인포그래픽 스타일에 맞는 blockquote CSS를 반환한다."""
+    box = INFOGRAPHIC_BOX_THEMES.get(infographic_style)
+    if not box:
+        return None, None  # 카테고리 기본 스타일 사용
+
+    base = "padding:20px 24px;margin:28px 0;font-size:16px;line-height:1.7;"
+    if box["design"] == "gradient":
+        css = (
+            f'background-color:{box["bg_light"]};'
+            f'background:linear-gradient(135deg,{box["bg_light"]} 0%,{box["bg_medium"]} 100%);'
+            f'border-left:4px solid {box["color"]};'
+            f'border-radius:0 10px 10px 0;'
+            f'box-shadow:0 2px 8px rgba(0,0,0,0.06);'
+            + base
+        )
+    elif box["design"] == "frame":
+        accent = box.get("border_accent", box["color"])
+        css = (
+            f'background-color:{box["bg_light"]};'
+            f'border:1.5px solid {accent};'
+            f'border-left:4px solid {box["color"]};'
+            f'border-radius:8px;'
+            f'box-shadow:0 1px 4px rgba(0,0,0,0.05);'
+            + base
+        )
+    else:  # accent
+        css = (
+            f'background-color:{box["bg_light"]};'
+            f'border-left:3px solid {box["color"]};'
+            f'border-radius:0;'
+            f'box-shadow:none;'
+            + base
+        )
+    return css, box["strong"]
+
+
+def get_inline_styles(category, infographic_style=None):
     resolved = normalize_category(category)
     theme = INLINE_STYLE_THEMES.get(resolved, INLINE_STYLE_THEMES["Thought Leadership"])
     styles = dict(INLINE_STYLES)
     styles["a"] = f'color:{theme["accent"]};'
-    styles["blockquote"] = f'background-color:#fff;background:{theme["blockquote_bg"]};border-left:4px solid {theme["blockquote_border"]};padding:24px 28px;margin:32px 0;border-radius:0 12px 12px 0;box-shadow:0 2px 8px rgba(15,23,42,0.06);font-size:16px;line-height:1.7;'
-    styles["blockquote_strong"] = f'color:{theme["blockquote_strong"]};'
+
+    bq_css, bq_strong = _blockquote_css(infographic_style)
+    if bq_css:
+        styles["blockquote"] = bq_css
+        styles["blockquote_strong"] = f'color:{bq_strong};font-weight:700;'
+    else:
+        styles["blockquote"] = f'background-color:#fff;background:{theme["blockquote_bg"]};border-left:4px solid {theme["blockquote_border"]};padding:24px 28px;margin:32px 0;border-radius:0 12px 12px 0;box-shadow:0 2px 8px rgba(15,23,42,0.06);font-size:16px;line-height:1.7;'
+        styles["blockquote_strong"] = f'color:{theme["blockquote_strong"]};'
+
     styles["cta_block"] = theme["cta_block"]
     styles["cta_copy"] = theme["cta_copy"]
     styles["cta_a"] = theme["cta_a"]
     return styles
 
 
-def apply_inline_styles(html_body, category=None):
+def apply_inline_styles(html_body, category=None, infographic_style=None):
     """HTML 본문의 태그에 인라인 style 속성을 삽입한다."""
-    s = get_inline_styles(category)
+    s = get_inline_styles(category, infographic_style)
     result = html_body
 
     # 이미지
@@ -735,10 +825,11 @@ def main():
     reading_time = calculate_reading_time(body)
 
     # 마크다운 → HTML 변환 (블로그 프론트엔드가 HTML을 직접 렌더링)
+    infographic_style = meta.get("infographic_style", "").strip().strip('"').strip("'")
     html_body = render_post_markdown_html(body)
     if imgbb_key and imgbb_key not in imgbb_placeholders:
         html_body = host_local_images(html_body, post_dir, imgbb_key)
-    html_body = apply_inline_styles(html_body, category)
+    html_body = apply_inline_styles(html_body, category, infographic_style or None)
 
     # API 페이로드 구성
     payload = {

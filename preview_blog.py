@@ -123,11 +123,11 @@ def md_to_html(md_text, category="ai-trend"):
         in_quote = False
         quote_lines = []
         for line in lines:
-            if line.startswith("> "):
+            if line.startswith("> ") or line.startswith(">") and len(line) > 1 and not line.startswith(">>"):
                 if not in_quote:
                     in_quote = True
                     quote_lines = []
-                quote_lines.append(line[2:])
+                quote_lines.append(line[2:] if line.startswith("> ") else line[1:])
             else:
                 if in_quote:
                     content = "<br>".join(quote_lines)

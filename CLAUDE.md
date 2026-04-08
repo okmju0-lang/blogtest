@@ -155,6 +155,7 @@
 **단계 1.5 — 제목 선택** (**Human-in-the-loop**)
 - Writer가 제안한 제목 후보 A/B/C를 사용자에게 제시한다.
 - 각 후보의 앵글(문제형/결과형/질문형)을 간략히 설명한다.
+- **비전문가 친화 검수**: 제목에 전문 용어(에이전트, 파일럿, RAG, MCP, 오케스트레이션 등)가 포함된 경우 Orchestrator가 제시 전에 일상 언어로 교체한다.
 - 사용자가 선택하거나 수정한 제목을 `draft_v1.md` frontmatter의 `title` 필드에 반영한 후 단계 2로 진행한다.
 - 사용자가 "그냥 진행", "알아서 해줘" 등으로 선택을 위임하면 Orchestrator가 셋 중 가장 비전문가 친화적인 제목을 선택한다.
 
@@ -188,7 +189,7 @@
 
 **단계 5.5 — AI 슬롭 자동 검사** (Orchestrator가 직접 수행)
 - `python scripts/slop_checker.py output/drafts/{post_id}/draft_final.md` 실행
-- **PASS** (종료 코드 0): 단계 8로 진행
+- **PASS** (종료 코드 0): 단계 6으로 진행
 - **WARNING** (종료 코드 1): 경고 항목을 Writer에게 전달하여 1회 수정 후 재검사. 재검사 후에도 WARNING이면 담당자에게 안내 후 진행
 - **FAIL** (종료 코드 2): critical 항목을 Writer에게 전달하여 필수 수정. 수정 후 재검사에서 critical 0건이 되어야 단계 8 진행
 
@@ -206,7 +207,12 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 - **프롬프트 유형 판단**:
   - **썸네일**: 반드시 추상 일러스트. `no text, no words, no letters` 포함.
   - **본문 이미지**: 글에 비교 데이터/프로세스 흐름/통계 수치/분류 체계가 있으면 → **인포그래픽** 프롬프트 (텍스트 허용, 한글 우선). 없으면 → 일반 일러스트 (`no text` 포함).
-- 인포그래픽 프롬프트 시 `scripts/style_prompts.py`의 스타일 프리픽스 활용 가능.
+- **인포그래픽 스타일 선택 규칙** (필수):
+  1. `output/infographic_style_registry.md`를 확인하여 직전 포스트의 스타일 키를 파악한다.
+  2. 직전 포스트와 **다른** 스타일 키를 선택한다.
+  3. `illustration_1`과 `illustration_2`는 **반드시 같은 스타일 키**를 사용한다 (같은 글 내 일관성).
+  4. 이미지 생성 완료 후 `output/infographic_style_registry.md`에 해당 포스트의 스타일을 기록한다.
+  5. 선택한 스타일 키를 `post.md` frontmatter의 `infographic_style` 필드에 기재한다. (발행 시 강조 박스 색상에 자동 반영됨)
 
 6b. **이미지 생성** (API 호출 3회)
 - `image-generator` 스킬의 `generate_image.py`를 batch 모드로 실행한다.
@@ -228,6 +234,7 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 - 텍스트 포함 이미지: 글자 깨짐, 오타, 잘림, 중복, 의미 불일치 확인.
 - 텍스트 없는 이미지: 의도치 않은 텍스트 삽입 여부 확인.
 - 이상 발견 시: 수정 프롬프트로 해당 이미지만 재생성 (이미지당 최대 2회).
+- **재생성 시 기존 파일 덮어쓰기 금지**: `illustration_1_v2.png`, `illustration_1_v3.png` 형식으로 별도 저장. 사용자가 비교 후 원하는 버전을 선택하면 그때 원본 파일명으로 교체한다.
 
 6c. **이미지 삽입**
 - `thumbnail.png`를 frontmatter `thumbnail` 속성에 연결한다.
@@ -342,6 +349,7 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 - API 호출은 **이미지 생성에만** 사용한다. 프롬프트 작성, 핵심 내용 추출 등 텍스트 분석은 LLM이 직접 수행한다.
 - 포스트당 3회 호출을 엄수한다. 추가 이미지가 필요하면 담당자 승인 후에만 생성한다.
 - 프롬프트 실패 시 프롬프트를 수정하여 재시도하되, 재시도는 이미지당 최대 2회로 제한한다.
+- 재시도 시 기존 파일을 덮어쓰지 않고 `_v2`, `_v3` 접미사로 별도 저장한다. 사용자가 선택한 버전만 원본 파일명으로 교체한다.
 
 ---
 
@@ -382,7 +390,7 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 | `publish_blog.py` | 단계 9-1: 블로그 발행 실행 시 | Orchestrator |
 | `scripts/slop_checker.py` | 단계 5.5: 텍스트 최종본 AI 슬롭 자동 검사 | Orchestrator |
 | `scripts/publish_tracker.py check` | 단계 3: 글감 중복 검사 / 신규 글 작성 전 | Orchestrator |
-| `scripts/publish_tracker.py log` | 단계 11: 발행 완료 후 이력 기록 | Orchestrator |
+| `scripts/publish_tracker.py log` | 단계 9: 발행 완료 후 이력 기록 | Orchestrator |
 | `scripts/publish_tracker.py stats` | 발행 현황 조회 요청 시 | Orchestrator |
 
 ---
@@ -400,7 +408,7 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 | 브랜드+SEO 통합 피드백 (4) | 브랜드 섹션 + SEO 섹션 모두 포함 | 1회 재시도 |
 | 핵심 내용 추출 + 프롬프트 (6a) | 핵심 내용 2가지 + 프롬프트 3개 작성 완료 | LLM 직접 수행 (API 없음) |
 | 이미지 생성 (6b) | 3장 모두 파일 존재 + 각 10KB 이상 | 이미지당 2회 재시도. API 키 오류 시 즉시 중단 |
-| 텍스트 검증 (6b-1) | 텍스트 깨짐/오타/잘림/중복 없음 | 수정 프롬프트로 재생성 (이미지당 최대 2회) |
+| 텍스트 검증 (6b-1) | 텍스트 깨짐/오타/잘림/중복 없음 | 수정 프롬프트로 재생성 (이미지당 최대 2회, `_v2`/`_v3` 별도 저장) |
 | 스크린샷 캡처 (8a) | 파일 존재 + 캡처 성공 | 대체 URL 1회 시도 후 스킵 |
 | 다이어그램 전문화 (8b) | 렌더링 성공 | 실패 시 기존 다이어그램 유지 |
 | AI 슬롭 검사 (5.5) | `slop_checker.py` 종료 코드 0 (PASS) | FAIL: Writer 수정 후 재검사. WARNING: 1회 수정 시도 후 담당자 안내 |
@@ -449,6 +457,7 @@ Reviewer가 단계 2에서 기밀 필터링을 수행한다.
 | 스크린샷 (Visual Editor) | `output/posts/{post_id}/images/screenshot_{n}.png` |
 | 비주얼 리포트 | `output/posts/{post_id}/visual_report.md` |
 | 변형 레지스트리 | `output/variant_registry.md` |
+| 인포그래픽 스타일 레지스트리 | `output/infographic_style_registry.md` |
 
 `post_id` 형식: `post_{YYYYMMDD}_{n}` (예: `post_20260319_1`)
 
@@ -459,7 +468,7 @@ Reviewer가 단계 2에서 기밀 필터링을 수행한다.
 Human-in-the-loop가 필요한 시점:
 1. **글감 선택** (워크플로우 1 단계 3.5): 글감 후보 리스트를 출력하고 선택을 기다린다.
 2. **최종 검토** (워크플로우 2 단계 8.5): 텍스트 최종본 + 이미지를 안내하고 승인/피드백을 기다린다.
-3. **발행 확인** (워크플로우 2 단계 11): 블로그 발행 여부 확인.
+3. **발행 확인** (워크플로우 2 단계 9): 블로그 발행 여부 확인.
 4. **에스컬레이션**: 기밀 노출 의심 또는 2회 루프 후 critical 잔존 시 즉시 보고한다.
 
 담당자에게 질문할 때는 다음 형식을 사용한다:
@@ -683,9 +692,9 @@ Orchestrator는 각 단계를 종료하고 다음 단계로 넘어가기 전에 
 
 - [ ] 담당자 승인을 받았는가? (Human-in-the-loop 완료)
 - [ ] 이미지 3장(thumbnail.png, illustration_1.png, illustration_2.png)이 `output/posts/{post_id}/images/`에 복사되었는가?
-- [ ] `post.md`의 frontmatter가 완전한가? (title, category, meta_description, target_keywords, thumbnail)
+- [ ] `post.md`의 frontmatter가 완전한가? (title, category, meta_description, target_keywords, thumbnail, infographic_style)
 - [ ] 이미지 경로가 `post.md` 본문에서 상대 경로(`images/...`)로 참조되는가?
-- [ ] Visual Editor 단계(단계 10)가 완료되었는가? (`visual_report.md` 존재)
+- [ ] Visual Editor 단계(단계 8)가 완료되었는가? (`visual_report.md` 존재)
 - [ ] 스크린샷에 출처 캡션이 모두 포함되어 있는가?
 
 ### 블로그 발행 시 (단계 9)

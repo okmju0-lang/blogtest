@@ -34,4 +34,20 @@ STYLE_PROMPTS = {
         "Include clear Korean labels and short text annotations on each element. "
         "Suitable for executive presentation. Labeled infographic."
     ),
+    "bold-data": (
+        "Create a bold, high-contrast data visualization infographic. "
+        "Bright teal (#00B4D8) and orange (#FF6B35) on white background. "
+        "Emphasis on large numbers, bold typography, strong visual hierarchy. "
+        "Use bar charts, pie charts, or comparison panels with vivid color blocks. "
+        "Include clear Korean labels and short text annotations on each element. "
+        "Dynamic, energetic, data-forward infographic."
+    ),
+    "editorial": (
+        "Create a magazine editorial-style educational diagram. "
+        "Warm off-white background (#FAF7F2), deep charcoal (#2D2D2D) text, terracotta (#C1440E) accent. "
+        "Clean grid layout, sophisticated typographic feel, generous whitespace. "
+        "Use simple line icons and understated dividers. "
+        "Include clear Korean labels and short text annotations on each element. "
+        "Refined, narrative-focused, thought leadership infographic."
+    ),
 }
