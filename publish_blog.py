@@ -365,12 +365,13 @@ def apply_inline_styles(html_body, category=None, infographic_style=None):
         return f'<img{attrs} style="{s["img"]}"{suffix}>'
     result = re.sub(r"<img([^>]*?)(/?)>", style_img, result)
 
-    # CTA 블록
+    # CTA 블록 — class는 유지하고 style을 추가한다.
+    # 어드민 에디터가 inline style을 제거해도 class 기반 CSS가 살아있어 레이아웃이 보존된다.
     def style_cta_block(match):
         block = match.group(0)
-        block = block.replace('<div class="cta-block">', f'<div style="{s["cta_block"]}">')
+        block = block.replace('<div class="cta-block">', f'<div class="cta-block" style="{s["cta_block"]}">')
         block = re.sub(r"<strong>", f'<strong style="{s["cta_strong"]}">', block)
-        block = block.replace('<p class="cta-copy">', f'<p style="{s["cta_copy"]}">')
+        block = block.replace('<p class="cta-copy">', f'<p class="cta-copy" style="{s["cta_copy"]}">')
         block = re.sub(r"<a ", f'<a style="{s["cta_a"]}" ', block)
         return block
     result = re.sub(r'<div class="cta-block">.*?</div>', style_cta_block, result, flags=re.DOTALL)
