@@ -92,8 +92,6 @@ All labels and text in Korean Hangul. Use English only for product names or acro
 | `modern` | 인디고+시안, 화이트 배경 | 테크/스타트업, 깔끔한 다이어그램 |
 | `minimal` | 흑백+회색 | 인쇄 친화적, 최소 장식, 심플한 구조 설명 |
 | `corporate` | 네이비+골드 | 공식 발표, 비교표, 임원 프레젠테이션 |
-| `bold-data` | 테일+오렌지, 화이트 배경 | 통계·수치 강조, 고대비 비교, 에너지 있는 데이터 시각화 |
-| `editorial` | 오프화이트+차콜+테라코타 | 내러티브 중심, 여백 강조, Thought Leadership 콘텐츠 |
 
 ### 스타일 일관성 규칙 (필수)
 

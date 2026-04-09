@@ -195,18 +195,16 @@
 
 **단계 6 — 이미지 생성** (Orchestrator가 직접 수행)
 
-Nano Banana 2 (`gemini-3.1-flash-image-preview`) API를 사용하여 포스트당 정확히 3장의 이미지를 생성한다.
-API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고, 프롬프트 작성 등 텍스트 분석은 LLM이 직접 수행한다.
+Nano Banana 2 (`gemini-3.1-flash-image-preview`) API를 사용하여 포스트당 정확히 **2장**의 이미지를 생성한다.
+썸네일은 생성하지 않는다. API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고, 프롬프트 작성 등 텍스트 분석은 LLM이 직접 수행한다.
 
 6a. **핵심 내용 추출 + 프롬프트 작성** (LLM이 직접 수행, API 호출 없음)
 - `draft_final.md`를 읽고 다음을 도출한다:
   - **핵심 내용 1**: 글에서 가장 중요한 포인트/인사이트 (일러스트 1용)
   - **핵심 내용 2**: 두 번째로 중요한 포인트/인사이트 (일러스트 2용)
-  - **종합 요약**: 글 전체를 아우르는 주제 (썸네일용)
 - 각각에 대해 영문 이미지 생성 프롬프트를 작성한다. (`references/image-style-guide.md` 참조)
-- **프롬프트 유형 판단**:
-  - **썸네일**: 반드시 추상 일러스트. `no text, no words, no letters` 포함.
-  - **본문 이미지**: 글에 비교 데이터/프로세스 흐름/통계 수치/분류 체계가 있으면 → **인포그래픽** 프롬프트 (텍스트 허용, 한글 우선). 없으면 → 일반 일러스트 (`no text` 포함).
+- **프롬프트 유형 판단** (본문 이미지만):
+  - 글에 비교 데이터/프로세스 흐름/통계 수치/분류 체계가 있으면 → **인포그래픽** 프롬프트 (텍스트 허용, 한글 우선). 없으면 → 일반 일러스트 (`no text` 포함).
 - **인포그래픽 스타일 선택 규칙** (필수):
   1. `output/infographic_style_registry.md`를 확인하여 직전 포스트의 스타일 키를 파악한다.
   2. 직전 포스트와 **다른** 스타일 키를 선택한다.
@@ -214,30 +212,28 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
   4. 이미지 생성 완료 후 `output/infographic_style_registry.md`에 해당 포스트의 스타일을 기록한다.
   5. 선택한 스타일 키를 `post.md` frontmatter의 `infographic_style` 필드에 기재한다. (발행 시 강조 박스 색상에 자동 반영됨)
 
-6b. **이미지 생성** (API 호출 3회)
+6b. **이미지 생성** (API 호출 2회)
 - `image-generator` 스킬의 `generate_image.py`를 batch 모드로 실행한다.
+- 썸네일은 생성하지 않는다.
 - 실행 명령:
   ```
   python .claude/skills/image-generator/scripts/generate_image.py batch \
       --post-dir output/drafts/{post_id} \
-      --thumbnail-prompt "..." \
       --illustration1-prompt "..." \
       --illustration2-prompt "..."
   ```
 - 출력:
-  - `output/drafts/{post_id}/images/thumbnail.png` (16:9)
   - `output/drafts/{post_id}/images/illustration_1.png` (4:3)
   - `output/drafts/{post_id}/images/illustration_2.png` (4:3)
 
 6b-1. **텍스트 검증** (필수, 생성 직후)
-- 생성된 이미지 3장을 Read로 열어 시각적으로 확인한다.
+- 생성된 이미지 2장을 Read로 열어 시각적으로 확인한다.
 - 텍스트 포함 이미지: 글자 깨짐, 오타, 잘림, 중복, 의미 불일치 확인.
 - 텍스트 없는 이미지: 의도치 않은 텍스트 삽입 여부 확인.
 - 이상 발견 시: 수정 프롬프트로 해당 이미지만 재생성 (이미지당 최대 2회).
-- **재생성 시 기존 파일 덮어쓰기 금지**: `illustration_1_v2.png`, `illustration_1_v3.png` 형식으로 별도 저장. 사용자가 비교 후 원하는 버전을 선택하면 그때 원본 파일명으로 교체한다.
+- **재생성 시 기존 파일 덮어쓰기 금지**: `illustration_1_v2.png`, `illustration_1_v3.png` 형식으로 별도 저장. 사용자가 버전을 선택하면 원본 파일을 교체하지 않고 `post.md`의 이미지 경로 참조만 새 버전 파일명으로 수정한다.
 
 6c. **이미지 삽입**
-- `thumbnail.png`를 frontmatter `thumbnail` 속성에 연결한다.
 - `illustration_1.png`를 핵심 내용 1이 서술된 본문 위치(H2/H3 섹션 뒤)에 삽입한다.
 - `illustration_2.png`를 핵심 내용 2가 서술된 본문 위치에 삽입한다.
 - 삽입 형식: `![{핵심 내용 설명}](images/{filename}.png)`
@@ -294,8 +290,9 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 
 **9-1. 발행 실행**
 - `publish_blog.py` 스크립트를 실행한다.
+- **기본값은 항상 초안 저장**이다. `--publish` 플래그는 사용자가 명시적으로 "발행해줘"라고 요청할 때만 사용한다.
 - 초안 저장: `python publish_blog.py output/posts/{post_id}/post.md`
-- 즉시 발행: `python publish_blog.py output/posts/{post_id}/post.md --publish`
+- 즉시 발행: `python publish_blog.py output/posts/{post_id}/post.md --publish` (**사용자 명시 요청 시만**)
 - 대표 글 설정: `--featured` 플래그 추가
 - 슬러그 지정: `--slug {custom-slug}` (미지정 시 제목에서 자동 생성)
 - 스크립트 동작 흐름:
@@ -325,18 +322,17 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 
 ### 포스트당 이미지 구성 (고정)
 
-포스트당 정확히 **3장** + 선택적 다이어그램.
+포스트당 정확히 **2장** + 선택적 다이어그램. 썸네일은 생성하지 않는다.
 
 | 순번 | 유형 | 비율 | 스타일 방향 | 생성 방법 |
 |---|---|---|---|---|
-| 1 | thumbnail | 16:9 | **추상 일러스트** (인포그래픽 금지) | Nano Banana 2 API |
-| 2 | illustration_1 | 4:3 | **인포그래픽 우선**, 해당 없으면 일러스트 | Nano Banana 2 API |
-| 3 | illustration_2 | 4:3 | **인포그래픽 우선**, 해당 없으면 일러스트 | Nano Banana 2 API |
+| 1 | illustration_1 | 4:3 | **인포그래픽 우선**, 해당 없으면 일러스트 | Nano Banana 2 API |
+| 2 | illustration_2 | 4:3 | **인포그래픽 우선**, 해당 없으면 일러스트 | Nano Banana 2 API |
 | (선택) | diagram | - | 구조/흐름 시각화 | LLM Mermaid 코드 + diagram-renderer |
 
 ### 생성 도구
 
-- **thumbnail / illustration**: Nano Banana 2 (`gemini-3.1-flash-image-preview`) API 전용. 포스트당 API 호출 3회 엄수.
+- **illustration**: Nano Banana 2 (`gemini-3.1-flash-image-preview`) API 전용. 포스트당 API 호출 2회 엄수.
 - **diagram**: LLM이 Mermaid 코드 직접 작성 → `diagram-renderer` 스킬로 검증 + 렌더링 (API 비용 없음)
 - **인포그래픽 스타일**: `/.claude/skills/image-generator/scripts/style_prompts.py`의 프리픽스 활용 가능.
 
@@ -347,9 +343,9 @@ API 비용 최소화를 위해 API 호출은 이미지 생성에만 사용하고
 ### 비용 최적화 원칙
 
 - API 호출은 **이미지 생성에만** 사용한다. 프롬프트 작성, 핵심 내용 추출 등 텍스트 분석은 LLM이 직접 수행한다.
-- 포스트당 3회 호출을 엄수한다. 추가 이미지가 필요하면 담당자 승인 후에만 생성한다.
+- 포스트당 2회 호출을 엄수한다. 추가 이미지가 필요하면 담당자 승인 후에만 생성한다.
 - 프롬프트 실패 시 프롬프트를 수정하여 재시도하되, 재시도는 이미지당 최대 2회로 제한한다.
-- 재시도 시 기존 파일을 덮어쓰지 않고 `_v2`, `_v3` 접미사로 별도 저장한다. 사용자가 선택한 버전만 원본 파일명으로 교체한다.
+- 재시도 시 기존 파일을 덮어쓰지 않고 `_v2`, `_v3` 접미사로 별도 저장한다. 사용자가 버전을 선택하면 원본 파일은 유지하고 `post.md`의 이미지 경로 참조만 새 버전 파일명으로 수정한다.
 
 ---
 
@@ -448,7 +444,6 @@ Reviewer가 단계 2에서 기밀 필터링을 수행한다.
 | 리뷰 | `output/drafts/{post_id}/review_v{n}.md` |
 | 브랜드+SEO 통합 피드백 | `output/drafts/{post_id}/polish_feedback.md` |
 | 텍스트 최종본 | `output/drafts/{post_id}/draft_final.md` |
-| 썸네일 | `output/drafts/{post_id}/images/thumbnail.png` |
 | 일러스트 1 | `output/drafts/{post_id}/images/illustration_1.png` |
 | 일러스트 2 | `output/drafts/{post_id}/images/illustration_2.png` |
 | 다이어그램 소스 | `output/drafts/{post_id}/images/{diagram_id}.mmd` |
@@ -575,7 +570,6 @@ target_keywords:
   - {서브 키워드}
 created_at: {YYYY-MM-DD}
 published: false
-thumbnail: images/{thumbnail_id}.png
 source_refs:
   - {소스 파일 경로}
 ---
@@ -646,7 +640,7 @@ Brand Editor가 `brand-voice-guide.md` 부재를 보고하면 Orchestrator가 �
 | `review_v{n}.md` 존재 + critical/confidential = 0 | 단계 2 (리뷰 통과) | 단계 4 (Brand Editor) |
 | `polish_feedback.md` 존재 | 단계 4 (브랜드+SEO 피드백) | 단계 5 (Writer 일괄 반영) |
 | `draft_final.md` 존재 | 단계 5 (텍스트 최종) | 단계 6 (이미지 생성) |
-| `images/thumbnail.png` + `images/illustration_*.png` 존재 | 단계 6 (이미지 완료) | 단계 6.5 (담당자 검토) |
+| `images/illustration_1.png` + `images/illustration_2.png` 존재 | 단계 6 (이미지 완료) | 단계 6.5 (담당자 검토) |
 | `output/posts/{post_id}/post.md` 존재 | 단계 7 (피드백 반영 완료) | 단계 9 (발행) 또는 단계 8 (비주얼, 요청 시) |
 | `visual_report.md` 존재 | 단계 8 (비주얼 강화 완료) | 단계 9 (발행) |
 
@@ -691,8 +685,8 @@ Orchestrator는 각 단계를 종료하고 다음 단계로 넘어가기 전에 
 ### 최종 발행 전환 시 (단계 7 완료)
 
 - [ ] 담당자 승인을 받았는가? (Human-in-the-loop 완료)
-- [ ] 이미지 3장(thumbnail.png, illustration_1.png, illustration_2.png)이 `output/posts/{post_id}/images/`에 복사되었는가?
-- [ ] `post.md`의 frontmatter가 완전한가? (title, category, meta_description, target_keywords, thumbnail, infographic_style)
+- [ ] 이미지 2장(illustration_1.png, illustration_2.png)이 `output/posts/{post_id}/images/`에 복사되었는가?
+- [ ] `post.md`의 frontmatter가 완전한가? (title, category, meta_description, target_keywords, infographic_style)
 - [ ] 이미지 경로가 `post.md` 본문에서 상대 경로(`images/...`)로 참조되는가?
 - [ ] Visual Editor 단계(단계 8)가 완료되었는가? (`visual_report.md` 존재)
 - [ ] 스크린샷에 출처 캡션이 모두 포함되어 있는가?

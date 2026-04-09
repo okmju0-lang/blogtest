@@ -193,23 +193,20 @@ def generate_image(prompt: str, image_type: str, output_path: str) -> dict:
     return {"success": False, "error": "max_retries_exceeded", "image_type": image_type}
 
 
-def batch_generate(post_dir: str, thumbnail_prompt: str,
-                   illustration1_prompt: str, illustration2_prompt: str) -> dict:
-    """블로그 포스트용 이미지 3장을 일괄 생성한다.
+def batch_generate(post_dir: str, illustration1_prompt: str, illustration2_prompt: str) -> dict:
+    """블로그 포스트용 이미지 2장을 일괄 생성한다. (썸네일 생성 안 함)
 
     Args:
         post_dir: 포스트 drafts 디렉토리 (예: output/drafts/post_20260323_1)
-        thumbnail_prompt: 썸네일 프롬프트 (영문)
         illustration1_prompt: 일러스트 1 프롬프트 (영문)
         illustration2_prompt: 일러스트 2 프롬프트 (영문)
     """
     images_dir = Path(post_dir) / "images"
     images_dir.mkdir(parents=True, exist_ok=True)
 
-    results = {"total": 3, "success_count": 0, "images": []}
+    results = {"total": 2, "success_count": 0, "images": []}
 
     tasks = [
-        ("thumbnail", thumbnail_prompt, str(images_dir / "thumbnail.png")),
         ("illustration", illustration1_prompt, str(images_dir / "illustration_1.png")),
         ("illustration", illustration2_prompt, str(images_dir / "illustration_2.png")),
     ]
@@ -243,10 +240,9 @@ def main():
     )
     single.add_argument("--output", required=True, help="출력 파일 경로 (.png)")
 
-    # 일괄 생성 (3장)
-    batch = subparsers.add_parser("batch", help="블로그 포스트 이미지 일괄 생성 (3장)")
+    # 일괄 생성 (2장, 썸네일 제외)
+    batch = subparsers.add_parser("batch", help="블로그 포스트 이미지 일괄 생성 (2장, 썸네일 제외)")
     batch.add_argument("--post-dir", required=True, help="포스트 디렉토리 경로")
-    batch.add_argument("--thumbnail-prompt", required=True, help="썸네일 프롬프트")
     batch.add_argument("--illustration1-prompt", required=True, help="일러스트 1 프롬프트")
     batch.add_argument("--illustration2-prompt", required=True, help="일러스트 2 프롬프트")
 
@@ -279,17 +275,16 @@ def main():
 
     if args.mode == "batch" or args.batch:
         post_dir = getattr(args, "post_dir", None)
-        tp = getattr(args, "thumbnail_prompt", None)
         ip1 = getattr(args, "illustration1_prompt", None)
         ip2 = getattr(args, "illustration2_prompt", None)
 
-        if not all([post_dir, tp, ip1, ip2]):
-            print("[오류] --batch 모드에는 --post-dir, --thumbnail-prompt, "
+        if not all([post_dir, ip1, ip2]):
+            print("[오류] --batch 모드에는 --post-dir, "
                   "--illustration1-prompt, --illustration2-prompt 가 필요합니다.")
             sys.exit(1)
 
-        print("[이미지 일괄 생성] 3장 (썸네일 1 + 일러스트 2)")
-        result = batch_generate(post_dir, tp, ip1, ip2)
+        print("[이미지 일괄 생성] 2장 (일러스트 2장, 썸네일 제외)")
+        result = batch_generate(post_dir, ip1, ip2)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         sys.exit(0 if result["all_success"] else 1)
 
