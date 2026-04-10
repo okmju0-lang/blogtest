@@ -21,11 +21,12 @@ STYLE_PROMPTS = {
         "Include clear Korean labels and short text annotations on each element. "
         "Professional tech/startup infographic with labeled diagrams."
     ),
-    "minimal": (
-        "Create a simple, minimalist educational diagram. "
-        "Black and white with gray accents. Clean lines, no decorations. "
-        "Include clear Korean labels and short text annotations. "
-        "Focus on clarity and readability. Print-friendly infographic with labeled diagrams."
+    "ax-vivid": (
+        "Create a vibrant AI transformation themed educational infographic. "
+        "Use deep blue (#1E3A8A) and purple (#7C3AED) as the dominant colors, with electric blue (#3B82F6) and violet (#8B5CF6) accents on a white background. "
+        "Include bold colored geometric shapes, smooth gradient arrows, and glowing node-and-connection elements that evoke data flow and AI networks. "
+        "Include clear Korean labels and short text annotations on each element. "
+        "Modern, energetic, AI product design aesthetic. No black-and-white, full color infographic."
     ),
     "corporate": (
         "Create a professional corporate educational diagram. "

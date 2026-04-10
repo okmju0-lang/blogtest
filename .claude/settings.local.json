@@ -71,7 +71,13 @@
       "Bash(python3 -c \"import ast; ast.parse\\(open\\('./.claude/skills/file-manager/scripts/manage_files.py'\\).read\\(\\)\\)\")",
       "Bash(python3 -c \"import ast; ast.parse\\(open\\('scripts/slop_checker.py'\\).read\\(\\)\\)\")",
       "Bash(python3 ./.claude/skills/image-generator/scripts/generate_image.py)",
-      "Bash(python3 -c \"import sys; sys.path.insert\\(0, '.'\\); from pathlib import Path; Path\\('./.claude/skills/image-generator/scripts/generate_image.py'\\).read_text\\(\\)[:100]\")"
+      "Bash(python3 -c \"import sys; sys.path.insert\\(0, '.'\\); from pathlib import Path; Path\\('./.claude/skills/image-generator/scripts/generate_image.py'\\).read_text\\(\\)[:100]\")",
+      "Bash(cmd.exe:*)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(powershell.exe:*)",
+      "Bash(python3 -c \"print\\('hello'\\)\")",
+      "WebFetch(domain:api.github.com)",
+      "Bash(del check_ratio.py)"
     ]
   }
 }

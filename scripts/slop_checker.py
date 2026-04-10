@@ -226,6 +226,49 @@ SLOP_RULES: list[SlopPattern] = [
         category="클리셰",
         description="진부한 시대/패러다임 표현",
     ),
+
+    # ── 13. 접속사 반복 (warning, 각 3회 초과) ──
+    SlopPattern(
+        name="connector_overuse_따라서",
+        patterns=[r"따라서"],
+        severity="warning",
+        category="접속사",
+        description="'따라서' 과다 반복 — 3회 이하로 줄인다",
+        max_allowed=3,
+    ),
+    SlopPattern(
+        name="connector_overuse_또한",
+        patterns=[r"또한"],
+        severity="warning",
+        category="접속사",
+        description="'또한' 과다 반복 — 3회 이하로 줄인다",
+        max_allowed=3,
+    ),
+    SlopPattern(
+        name="connector_overuse_하지만",
+        patterns=[r"하지만"],
+        severity="warning",
+        category="접속사",
+        description="'하지만' 과다 반복 — 3회 이하로 줄인다",
+        max_allowed=3,
+    ),
+
+    # ── 14. 소제목 정의형 (warning) ──
+    SlopPattern(
+        name="definition_heading",
+        patterns=[
+            r"^#{2,3}\s*.+의\s*개념",
+            r"^#{2,3}\s*.+란\s*(무엇|뭔가|어떤)",
+            r"^#{2,3}\s*.+의\s*장점",
+            r"^#{2,3}\s*.+의\s*단점",
+            r"^#{2,3}\s*.+의\s*활용\s*방법",
+            r"^#{2,3}\s*[0-9]+단계",
+        ],
+        severity="warning",
+        category="소제목",
+        description="교과서식 정의형·단계형 소제목 — 관찰형·역설형·문제 제기형으로 바꾼다",
+        max_allowed=0,
+    ),
 ]
 
 
@@ -294,6 +337,41 @@ def check_ending_repetition(lines: list[str]) -> list[RepetitionIssue]:
                 detail=f"'{label}' 어미가 {consecutive}회 연속 반복",
                 severity="warning",
             ))
+    return issues
+
+
+def check_ending_ratio(lines: list[str]) -> list[RepetitionIssue]:
+    """~합니다/~입니다 종결어미가 전체 본문 문장의 60% 이상이면 경고"""
+    issues = []
+    sentences = []
+    in_frontmatter = False
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped == "---":
+            in_frontmatter = not in_frontmatter
+            continue
+        if in_frontmatter:
+            continue
+        if not stripped:
+            continue
+        if stripped.startswith(("#", "!", ">", "|", "-", "```", "[")):
+            continue
+        sentences.append(stripped)
+
+    if len(sentences) < 5:
+        return issues
+
+    formal_endings = re.compile(r"(합니다|입니다|됩니다|있습니다|없습니다|겠습니다)[.\s]*$")
+    formal_count = sum(1 for s in sentences if formal_endings.search(s))
+    ratio = formal_count / len(sentences)
+
+    if ratio >= 0.6:
+        issues.append(RepetitionIssue(
+            issue_type="ending_ratio",
+            location="전체",
+            detail=f"'~합니다/입니다' 계열 어미가 전체 문장의 {ratio:.0%} — 종결어미를 다양하게 변주한다 (목표: 60% 미만)",
+            severity="warning",
+        ))
     return issues
 
 
@@ -438,6 +516,7 @@ def check_file(filepath: str) -> SlopReport:
 
     # 문장 반복 검사
     report.repetition_issues.extend(check_ending_repetition(body_lines))
+    report.repetition_issues.extend(check_ending_ratio(body_lines))
     report.repetition_issues.extend(check_first_sentence(lines))
 
     return report
